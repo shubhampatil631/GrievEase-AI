@@ -3,6 +3,9 @@
 > **Event:** First Commit — Bharat Builds Tour (WeMakeDevs × AWS)  
 > **Tracks:** Ship It (1st Place) • Best UI (3rd Place) • Amazon Fast-Track Interview Shortlist  
 > **Date:** September 17–20, 2026  
+> **🌐 Live Application URL (Amplify):** [https://main.d1pngouj0au9lg.amplifyapp.com/](https://main.d1pngouj0au9lg.amplifyapp.com/)  
+> **⚡ Live HTTP API Gateway:** `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com`  
+> **🧠 Bedrock Knowledge Base ID:** `I9ZVRIM4C2` (OpenSearch Serverless)  
 
 ---
 
