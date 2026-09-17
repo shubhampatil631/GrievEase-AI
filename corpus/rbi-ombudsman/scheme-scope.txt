@@ -1,0 +1,16 @@
+# Reserve Bank - Integrated Ombudsman Scheme (RB-IOS), 2021 — Scope and Coverage
+
+## 1. Covered Regulated Entities (RE)
+The RB-IOS 2021 covers complaints against:
+- All Commercial Banks (Public, Private, Foreign, Regional Rural Banks, Small Finance Banks, Payments Banks).
+- All Scheduled Primary (Urban) Co-operative Banks and Non-Scheduled Urban Co-operative Banks with deposits >= ₹50 crore.
+- All Systemically Important Non-Banking Financial Companies (NBFCs) and NBFCs with asset size >= ₹100 crore offering customer services.
+- All Non-Bank System Participants (Payment System Operators, Prepaid Payment Instrument / PPI Issuers, UPI Apps/Wallets, Payment Aggregators).
+
+## 2. Valid Grounds of Complaint
+- Non-adherence to RBI instructions on ATM / Debit Card / Credit Card operations.
+- Unauthorized electronic fund transfers (UPI, IMPS, NEFT, RTGS) or non-reversal of failed transactions within T+1 / T+5 days (Harmonization of TAT rules).
+- Levying of charges without prior notice or excessive interest / processing fee discrepancies.
+- Refusal to accept cash deposit, delay in issue/pay order of drafts.
+- Non-adherence to Fair Practices Code for Lenders or recovery agent harassment.
+- Inaccurate credit reporting to Credit Information Companies (CIBIL, Experian, CRIF).

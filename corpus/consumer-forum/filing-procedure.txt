@@ -1,0 +1,20 @@
+# e-Daakhil & Consumer Commission Filing Procedure and Notice Standards
+
+## 1. Formal Legal Notice Structure
+Before or alongside an e-Daakhil filing, a formal Legal / Grievance Notice must be issued to the opposite party containing:
+1. Sender Details: Full Name, Address, Contact Number, Email.
+2. Recipient Details: Company Name, Registered Office Address, Grievance Officer Email.
+3. Transaction Facts: Order / Invoice Number, Date of Purchase, Amount Paid, Payment Method (UPI, Card, Net Banking).
+4. Specific Deficiency in Service / Unfair Trade Practice: Detailed description of defect, nondelivery, or refusal of refund.
+5. Specific Relief Sought: Exact refund amount claimed + interest (typically 18% p.a.) + compensation for harassment and litigation costs.
+6. Notice Window: Mandatory 15-day or 30-day cure period for the respondent to comply before statutory filing.
+
+## 2. Online Filing on e-Daakhil Portal
+- Platform: https://edaakhil.nic.in
+- Mandatory Attachments:
+  - Copy of Tax Invoice / Purchase Receipt.
+  - Payment transaction receipt / UTR number / bank statement excerpt.
+  - Copies of email correspondence, customer support ticket logs, or WhatsApp chat transcripts showing deficiency.
+  - Copy of prior legal notice and proof of dispatch/delivery.
+  - Complainant identity proof (Aadhaar / PAN / Voter ID).
+  - Signed verification affidavit.

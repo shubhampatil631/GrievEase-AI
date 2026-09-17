@@ -1,0 +1,21 @@
+# Consumer Protection Act, 2019 — Pecuniary Jurisdiction and Statutory Limitation Rules
+
+## 1. Statutory Limitation Period
+- Under Section 69 of the Consumer Protection Act, 2019, a complaint must be filed within TWO (2) YEARS from the date on which the cause of action has arisen.
+- Cause of action arises on:
+  - Date of deficiency in service or defect in goods.
+  - Date of denial of refund/replacement by the seller/service provider.
+  - Expiry of promised delivery/resolution date without fulfillment.
+
+## 2. Pecuniary Jurisdiction Thresholds (as per Consumer Protection Rules)
+- **District Consumer Disputes Redressal Commission (DCDRC):**
+  - Jurisdiction: Value of goods or services paid as consideration does NOT exceed ₹50,00,000 (Rupees Fifty Lakhs).
+  - Filing mode: District Commission in whose territorial jurisdiction the complainant resides, works, or where the cause of action arose.
+- **State Consumer Disputes Redressal Commission (SCDRC):**
+  - Jurisdiction: Value of goods or services paid exceeds ₹50,00,000 (Rupees Fifty Lakhs) but does NOT exceed ₹2,00,00,000 (Rupees Two Crores).
+- **National Consumer Disputes Redressal Commission (NCDRC):**
+  - Jurisdiction: Value of goods or services paid exceeds ₹2,00,00,000 (Rupees Two Crores).
+
+## 3. Mandatory Pre-Conditions
+- Prior written communication (email, support ticket, or WhatsApp) demanding resolution from the seller/platform is highly recommended before filing.
+- E-commerce platforms are designated as marketplace or inventory entities under E-Commerce Rules 2020 and are liable for deficiency in refund timelines.

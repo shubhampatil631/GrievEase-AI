@@ -1,0 +1,13 @@
+# Telecom Regulatory Authority of India (TRAI) — Grievance Categories & Jurisdiction
+
+## 1. Statutory Role & Individual Grievance Jurisdiction
+- Important Legal Distinction: Under the TRAI Act 1997, TRAI does NOT directly adjudicate individual consumer complaints.
+- Instead, TRAI mandates a strict, binding Two-Tier Grievance Redressal Mechanism that all Telecom Service Providers (TSPs - Jio, Airtel, Vi, BSNL) MUST implement under the Telecom Consumers Protection and Redressal of Grievances Regulations.
+- Unresolved issues beyond the Appellate Authority escalate to the Telecom Disputes Settlement and Appellate Tribunal (TDSAT) or the Consumer Commission (DCDRC/e-Daakhil).
+
+## 2. Covered Grievance Categories
+- **Billing & Charging Discrepancies:** Incorrect tariff application, unauthorized value-added service (VAS) activation, wrong data meter charges, non-refund of security deposit.
+- **Service Quality & Disconnection:** Network blackouts, persistent call drops, broadband fiber outage exceeding SLA without credit, arbitrary disconnection of SIM.
+- **Mobile Number Portability (MNP):** Rejection of Unique Porting Code (UPC), delay in porting beyond statutory window (2 to 4 working days).
+- **Unsolicited Commercial Communications (UCC / DND):** Spam calls and SMS violations under TCCCPR 2018.
+- **SIM Swap / Fraudulent Deactivation:** Unauthorized SIM swap leading to financial fraud.

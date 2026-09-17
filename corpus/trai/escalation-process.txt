@@ -1,0 +1,22 @@
+# TRAI Mandated Two-Tier Escalation Hierarchy and Timelines
+
+## 1. Mandatory Two-Tier Escalation Structure
+All telecommunications consumers must follow this statutory escalation hierarchy:
+
+### Tier 1: Complaint Centre / Customer Care (Call Center & Web Portal)
+- Customer lodges grievance via toll-free number (198) or operator web portal.
+- Service Provider MUST provide a Unique Docket / Complaint Number immediately with an estimated resolution timeline.
+- Resolution standard: Billing complaints must be resolved within FOUR (4) WEEKS; service disruptions within 3 DAYS.
+
+### Tier 2: Appellate Authority of the Telecom Service Provider
+- If the complaint is NOT resolved within specified time at Tier 1, or the subscriber is dissatisfied with the resolution:
+- The subscriber can file an appeal with the Appellate Authority of the respective telecom service provider.
+- **Limitation Window:** Appeal must be filed within THIRTY (30) DAYS from the expiry of the Tier 1 resolution time limit.
+- Composition of Appellate Authority: An Appellate Authority Secretariat with a 2-member Advisory Committee.
+- Appellate Authority must dispose of the appeal within THIRTY-NINE (39) DAYS of filing.
+
+## 2. Escalation Beyond Tier 2
+If the grievance remains unresolved after the Appellate Authority's decision:
+- Filing a consumer dispute before the District Consumer Commission (DCDRC) via e-Daakhil for deficiency of service.
+- National Consumer Helpline (NCH): Call 1915 or file on https://consumerhelpline.gov.in (Integrated Grievance Redressal Mechanism).
+- Sanchar Saathi Portal (DoT): https://sancharsaathi.gov.in for lost/stolen device blocking and unauthorized SIM detection.

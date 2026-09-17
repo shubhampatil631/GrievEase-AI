@@ -1,0 +1,162 @@
+{
+  "Comment": "GrievEase AI 4-Agent Grievance Escalation Pipeline",
+  "StartAt": "IntakeAgent",
+  "States": {
+    "IntakeAgent": {
+      "Type": "Task",
+      "Resource": "${IntakeAgentFunctionArn}",
+      "TimeoutSeconds": 30,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Lambda.ServiceException",
+            "Lambda.AWSLambdaException",
+            "Lambda.SdkClientException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 3,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "MarkFailed"
+        }
+      ],
+      "ResultPath": "$.intakeResult",
+      "Next": "ClassificationAgent"
+    },
+    "ClassificationAgent": {
+      "Type": "Task",
+      "Resource": "${ClassificationAgentFunctionArn}",
+      "TimeoutSeconds": 30,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Bedrock.ThrottlingException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 3,
+          "MaxAttempts": 4,
+          "BackoffRate": 2.0
+        },
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "IntervalSeconds": 2,
+          "MaxAttempts": 2,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "MarkFailed"
+        }
+      ],
+      "ResultPath": "$.classificationResult",
+      "Next": "DraftingAgent"
+    },
+    "DraftingAgent": {
+      "Type": "Task",
+      "Resource": "${DraftingAgentFunctionArn}",
+      "TimeoutSeconds": 30,
+      "Retry": [
+        {
+          "ErrorEquals": [
+            "Bedrock.ThrottlingException",
+            "Lambda.TooManyRequestsException"
+          ],
+          "IntervalSeconds": 3,
+          "MaxAttempts": 4,
+          "BackoffRate": 2.0
+        }
+      ],
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "MarkFailed"
+        }
+      ],
+      "ResultPath": "$.draftResult",
+      "Next": "ComplianceGuardAgent"
+    },
+    "ComplianceGuardAgent": {
+      "Type": "Task",
+      "Resource": "${ComplianceGuardAgentFunctionArn}",
+      "TimeoutSeconds": 15,
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "ResultPath": "$.error",
+          "Next": "MarkFailed"
+        }
+      ],
+      "ResultPath": "$.guardResult",
+      "Next": "GuardDecision"
+    },
+    "GuardDecision": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.guardResult.passed",
+          "BooleanEquals": true,
+          "Next": "MarkReady"
+        }
+      ],
+      "Default": "MarkRejected"
+    },
+    "MarkReady": {
+      "Type": "Task",
+      "Resource": "${UpdateCaseStatusFunctionArn}",
+      "Parameters": {
+        "caseId.$": "$.caseId",
+        "status": "READY",
+        "guardResult.$": "$.guardResult",
+        "forum.$": "$.classificationResult.forum",
+        "deadline.$": "$.classificationResult.deadline",
+        "confidence.$": "$.classificationResult.confidence",
+        "draftNotice.$": "$.draftResult.draftNotice"
+      },
+      "End": true
+    },
+    "MarkRejected": {
+      "Type": "Task",
+      "Resource": "${UpdateCaseStatusFunctionArn}",
+      "Parameters": {
+        "caseId.$": "$.caseId",
+        "status": "REJECTED",
+        "guardResult.$": "$.guardResult",
+        "rejectionReason.$": "$.guardResult.reason",
+        "forum.$": "$.classificationResult.forum",
+        "deadline.$": "$.classificationResult.deadline",
+        "draftNotice.$": "$.draftResult.draftNotice"
+      },
+      "End": true
+    },
+    "MarkFailed": {
+      "Type": "Task",
+      "Resource": "${UpdateCaseStatusFunctionArn}",
+      "Parameters": {
+        "caseId.$": "$.caseId",
+        "status": "FAILED",
+        "error.$": "$.error"
+      },
+      "End": true
+    }
+  }
+}

@@ -1,0 +1,21 @@
+# RBI Integrated Ombudsman Scheme — Mandatory Timelines and Pre-conditions
+
+## 1. Mandatory 30-Day Pre-requisite Rule
+- A complainant CANNOT approach the RBI Ombudsman directly on Day 1.
+- Step 1: Complainant must first lodge a formal grievance with the internal Grievance Redressal Officer / Principal Nodal Officer (PNO) of the Regulated Entity (Bank/NBFC/Wallet).
+- Step 2: An escalation to the RBI Ombudsman is maintainable ONLY IF:
+  1. The Regulated Entity has REJECTED the complaint wholly or partly, OR
+  2. The complainant has received NO REPLY from the entity within THIRTY (30) DAYS of lodging the complaint, OR
+  3. The complainant is not satisfied with the reply provided by the entity.
+
+## 2. Limitation Period for Filing with RBI Ombudsman
+- The complaint must be filed with the RBI Ombudsman within ONE (1) YEAR from the date of receipt of the reply from the Regulated Entity, OR
+- Where no reply was received, within ONE (1) YEAR AND THIRTY (30) DAYS from the date of the initial representation to the entity.
+
+## 3. Compensation and Awards
+- The Ombudsman may award compensation up to ₹20,00,000 (Rupees Twenty Lakhs) for direct loss incurred by the complainant.
+- The Ombudsman may award an additional compensation up to ₹1,00,000 (Rupees One Lakh) for loss of time, expenses incurred, harassment, and mental anguish.
+
+## 4. Filing Portal
+- RBI Complaint Management System (CMS): https://cms.rbi.org.in
+- Centralised Receipt and Processing Centre (CRPC), Reserve Bank of India, 4th Floor, Sector 17, Chandigarh - 160017.

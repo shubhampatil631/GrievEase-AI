@@ -1,0 +1,388 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  GrievEase AI - AWS-Native Autonomous Grievance Escalation Engine
+  First Commit Hackathon (Bharat Builds Tour)
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Runtime: python3.11
+    Tracing: Active
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref GrievEaseTable
+        RULES_TABLE_NAME: !Ref ComplianceRulesTable
+        EVIDENCE_BUCKET: !Ref EvidenceBucket
+        KB_CORPUS_BUCKET: !Ref KbCorpusBucket
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        KB_ID: !Ref BedrockKnowledgeBaseId
+        EVENT_BUS_NAME: default
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    Description: Deployment environment (dev, prod)
+  BedrockModelId:
+    Type: String
+    Default: anthropic.claude-3-haiku-20240307-v1:0
+    Description: Bedrock Foundation Model ID for classification & drafting
+  BedrockKnowledgeBaseId:
+    Type: String
+    Default: I9ZVRIM4C2
+    Description: Amazon Bedrock Knowledge Base ID for RAG retrieval
+
+Resources:
+  # ==========================================
+  # Storage: S3 Buckets
+  # ==========================================
+  EvidenceBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub grievease-evidence-${AWS::AccountId}-${Environment}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders: ['*']
+            AllowedMethods: [GET, PUT, POST, HEAD]
+            AllowedOrigins: ['*']
+            MaxAge: 3600
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToGlacier
+            Status: Enabled
+            ExpirationInDays: 90
+
+  KbCorpusBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub grievease-kb-corpus-${AWS::AccountId}-${Environment}
+
+  # ==========================================
+  # Database: DynamoDB Tables
+  # ==========================================
+  GrievEaseTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub GrievEaseTable-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: UserCasesIndex
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: StatusIndex
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  ComplianceRulesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub ComplianceRulesTable-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: forum
+          AttributeType: S
+        - AttributeName: ruleId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: forum
+          KeyType: HASH
+        - AttributeName: ruleId
+          KeyType: RANGE
+
+  # ==========================================
+  # Authentication: Cognito User Pool
+  # ==========================================
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub grievease-user-pool-${Environment}
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: false
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub grievease-spa-client-${Environment}
+      UserPoolId: !Ref CognitoUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  # ==========================================
+  # API Layer: API Gateway HTTP API
+  # ==========================================
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Sub grievease-http-api-${Environment}
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key']
+        AllowMethods: [GET, POST, OPTIONS]
+
+  # ==========================================
+  # Lambda Functions: API Endpoints
+  # ==========================================
+  HealthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.api.health.handler
+      Events:
+        Health:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /health
+            Method: GET
+
+  PresignUploadFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.api.presign_upload.handler
+      Policies:
+        - S3WritePolicy:
+            BucketName: !Sub grievease-evidence-${AWS::AccountId}-${Environment}
+      Events:
+        Presign:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /uploads/presign
+            Method: POST
+
+  CasesApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.api.cases_handler.handler
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref GrievEasePipeline
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GrievEaseTable
+        - StepFunctionsExecutionPolicy:
+            StateMachineName: !GetAtt GrievEasePipeline.Name
+      Events:
+        CreateCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /cases
+            Method: POST
+        ListCases:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /cases
+            Method: GET
+        GetCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /cases/{caseId}
+            Method: GET
+
+  # ==========================================
+  # Lambda Functions: 4 Pipeline Agents
+  # ==========================================
+  IntakeAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.agents.intake_agent.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [textract:DetectDocumentText]
+              Resource: '*'
+        - S3ReadPolicy:
+            BucketName: !Sub grievease-evidence-${AWS::AccountId}-${Environment}
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GrievEaseTable
+
+  ClassificationAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.agents.classification_agent.handler
+      MemorySize: 1024
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:Retrieve
+                - bedrock:RetrieveAndGenerate
+              Resource: '*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GrievEaseTable
+
+  DraftingAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.agents.drafting_agent.handler
+      MemorySize: 1024
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [bedrock:InvokeModel]
+              Resource: '*'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GrievEaseTable
+
+  ComplianceGuardAgentFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.agents.compliance_guard_agent.handler
+      MemorySize: 256
+      Policies:
+        # Deliberately pure DynamoDB policy — NO Bedrock permissions
+        - DynamoDBReadPolicy:
+            TableName: !Ref ComplianceRulesTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GrievEaseTable
+
+  UpdateCaseStatusFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.agents.update_case_status.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref GrievEaseTable
+        - Statement:
+            - Effect: Allow
+              Action: [events:PutEvents]
+              Resource: '*'
+
+  ReminderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: .
+      Handler: src.api.reminder_handler.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action: [ses:SendEmail, ses:SendRawEmail]
+              Resource: '*'
+
+  # ==========================================
+  # Orchestration: AWS Step Functions Pipeline
+  # ==========================================
+  GrievEasePipeline:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Name: !Sub GrievEasePipeline-${Environment}
+      DefinitionUri: statemachine/pipeline.asl.json
+      DefinitionSubstitutions:
+        IntakeAgentFunctionArn: !GetAtt IntakeAgentFunction.Arn
+        ClassificationAgentFunctionArn: !GetAtt ClassificationAgentFunction.Arn
+        DraftingAgentFunctionArn: !GetAtt DraftingAgentFunction.Arn
+        ComplianceGuardAgentFunctionArn: !GetAtt ComplianceGuardAgentFunction.Arn
+        UpdateCaseStatusFunctionArn: !GetAtt UpdateCaseStatusFunction.Arn
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref IntakeAgentFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ClassificationAgentFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref DraftingAgentFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref ComplianceGuardAgentFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref UpdateCaseStatusFunction
+
+  # ==========================================
+  # Event-Driven Notifications: EventBridge Rule
+  # ==========================================
+  CaseReadyEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - grievease.cases
+        detail-type:
+          - CaseReadyForReminder
+      Targets:
+        - Arn: !GetAtt ReminderFunction.Arn
+          Id: TargetReminderFunction
+
+  PermissionForEventsToInvokeReminder:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ReminderFunction
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CaseReadyEventRule.Arn
+
+# ==========================================
+# Outputs
+# ==========================================
+Outputs:
+  ApiUrl:
+    Description: HTTP API Gateway base endpoint URL
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+  GrievEaseTableName:
+    Description: DynamoDB Main Table Name
+    Value: !Ref GrievEaseTable
+  ComplianceRulesTableName:
+    Description: DynamoDB Compliance Rules Table Name
+    Value: !Ref ComplianceRulesTable
+  EvidenceBucketName:
+    Description: S3 Evidence Upload Bucket Name
+    Value: !Ref EvidenceBucket
+  KbCorpusBucketName:
+    Description: S3 Knowledge Base Corpus Bucket Name
+    Value: !Ref KbCorpusBucket
+  StateMachineArn:
+    Description: Step Functions Pipeline State Machine ARN
+    Value: !Ref GrievEasePipeline
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref CognitoUserPool
+  UserPoolClientId:
+    Description: Cognito App Client ID
+    Value: !Ref CognitoUserPoolClient
