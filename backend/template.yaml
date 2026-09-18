@@ -19,6 +19,7 @@ Globals:
         BEDROCK_MODEL_ID: !Ref BedrockModelId
         KB_ID: !Ref BedrockKnowledgeBaseId
         EVENT_BUS_NAME: default
+        GROQ_API_KEY: !Ref GroqApiKey
 
 Parameters:
   Environment:
@@ -33,6 +34,10 @@ Parameters:
     Type: String
     Default: I9ZVRIM4C2
     Description: Amazon Bedrock Knowledge Base ID for RAG retrieval
+  GroqApiKey:
+    Type: String
+    Default: ""
+    Description: High-speed LLM fallback API key
 
 Resources:
   # ==========================================
@@ -156,7 +161,7 @@ Resources:
       CorsConfiguration:
         AllowOrigins: ['*']
         AllowHeaders: ['Content-Type', 'Authorization', 'X-Api-Key']
-        AllowMethods: [GET, POST, OPTIONS]
+        AllowMethods: [GET, POST, PUT, PATCH, DELETE, OPTIONS]
 
   # ==========================================
   # Lambda Functions: API Endpoints
@@ -221,6 +226,30 @@ Resources:
           Properties:
             ApiId: !Ref HttpApi
             Path: /cases/{caseId}
+            Method: GET
+        UpdateCasePatch:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /cases/{caseId}
+            Method: PATCH
+        UpdateCasePut:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /cases/{caseId}
+            Method: PUT
+        DeleteCase:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /cases/{caseId}
+            Method: DELETE
+        GetStats:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /cases/stats
             Method: GET
 
   # ==========================================

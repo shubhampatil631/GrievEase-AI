@@ -68,6 +68,9 @@ def update_case_meta(case_id: str, status: str = None, updates: dict = None, sta
             field_alias = f"#field_{idx}"
             val_alias = f":val_{idx}"
             expr_names[field_alias] = k
+            # DynamoDB requires Decimal instead of float
+            if isinstance(v, float):
+                v = Decimal(str(v))
             expr_values[val_alias] = v
             update_expr.append(f"{field_alias} = {val_alias}")
 

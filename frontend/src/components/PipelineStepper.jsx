@@ -7,23 +7,34 @@ import {
   Clock, 
   Cpu, 
   Sparkles,
-  ShieldCheck,
-  FileSearch,
-  BookOpen,
-  PenTool,
-  ShieldAlert,
-  ArrowRight,
-  Activity,
-  Zap,
-  Server
+  ShieldCheck, 
+  FileSearch, 
+  BookOpen, 
+  PenTool, 
+  ShieldAlert, 
+  ArrowRight, 
+  Activity, 
+  Zap, 
+  Server,
+  Copy,
+  Check,
+  Radio,
+  Sliders,
+  Filter,
+  Layers,
+  ChevronRight
 } from 'lucide-react';
 import { soundFx } from '../utils/audio';
+import { getCaseDetails } from '../services/api';
 
-export default function PipelineStepper({ caseData, onComplete }) {
+export default function PipelineStepper({ caseData, onComplete, onShowToast }) {
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [logs, setLogs] = useState([]);
   const [stageTimes, setStageTimes] = useState({});
   const [liveTokens, setLiveTokens] = useState(0);
+  const [copiedLogs, setCopiedLogs] = useState(false);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1); // 1 = Normal, 2 = 2x, 0 = Instant
+  const [logFilter, setLogFilter] = useState('ALL'); // 'ALL' | 'LAMBDA' | 'STEP_FUNCTIONS' | 'ERRORS'
   const terminalEndRef = useRef(null);
 
   const stages = [
@@ -79,7 +90,7 @@ export default function PipelineStepper({ caseData, onComplete }) {
     if (currentStageIndex === 1 || currentStageIndex === 2) {
       const interval = setInterval(() => {
         setLiveTokens((prev) => prev + Math.floor(Math.random() * 25 + 15));
-      }, 80);
+      }, 70);
       return () => clearInterval(interval);
     }
   }, [currentStageIndex]);
@@ -91,12 +102,22 @@ export default function PipelineStepper({ caseData, onComplete }) {
     const runStage = (index) => {
       if (index >= stages.length) {
         soundFx.playSuccess();
-        setTimeout(() => {
+        setTimeout(async () => {
+          let liveData = null;
+          if (caseData?.caseId) {
+            try {
+              liveData = await getCaseDetails(caseData.caseId);
+            } catch (err) {
+              console.warn("Could not fetch live case details:", err);
+            }
+          }
+
           onComplete({
             ...caseData,
-            status: caseData?.isGuardDemo ? "REJECTED" : "READY"
+            ...(liveData || {}),
+            status: liveData?.status || (caseData?.isGuardDemo ? "REJECTED" : "READY")
           });
-        }, 500);
+        }, 600);
         return;
       }
 
@@ -107,8 +128,9 @@ export default function PipelineStepper({ caseData, onComplete }) {
       const newLog = `${new Date().toISOString().substring(11, 19)} [AWS::StepFunctions] State: ${stage.id} -> Invoking Lambda (${stage.service})`;
       setLogs((prev) => [...prev, newLog]);
 
+      const stageDuration = speedMultiplier === 0 ? 100 : Math.round(stage.duration / speedMultiplier);
+
       timeoutId = setTimeout(() => {
-        const elapsed = ((Date.now() - startTime) / 1000).toFixed(2);
         const stageLatency = (stage.duration + Math.floor(Math.random() * 80)).toFixed(0);
         setStageTimes((prev) => ({ ...prev, [stage.id]: `${stageLatency}ms` }));
         
@@ -120,16 +142,38 @@ export default function PipelineStepper({ caseData, onComplete }) {
         setLogs((prev) => [...prev, doneLog]);
 
         runStage(index + 1);
-      }, stage.duration);
+      }, stageDuration);
     };
 
     runStage(0);
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [speedMultiplier]);
+
+  const handleCopyLogs = () => {
+    soundFx.playSuccess();
+    navigator.clipboard.writeText(logs.join('\n'));
+    setCopiedLogs(true);
+    setTimeout(() => setCopiedLogs(false), 2000);
+    if (onShowToast) {
+      onShowToast({
+        title: "Logs Copied",
+        message: "CloudWatch log execution stream copied to clipboard",
+        type: 'success'
+      });
+    }
+  };
+
+  const filteredLogs = logs.filter(log => {
+    if (logFilter === 'ALL') return true;
+    if (logFilter === 'LAMBDA') return log.includes('[') && !log.includes('[AWS::StepFunctions]');
+    if (logFilter === 'STEP_FUNCTIONS') return log.includes('[AWS::StepFunctions]');
+    if (logFilter === 'ERRORS') return log.includes('⚠️') || log.includes('REJECTION');
+    return true;
+  });
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8 sm:py-12 animate-fade-in">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 animate-fade-in">
       
       {/* Top Pipeline Header */}
       <div className="text-center mb-8">
@@ -137,130 +181,205 @@ export default function PipelineStepper({ caseData, onComplete }) {
           <Activity className="w-3.5 h-3.5 text-brand-400 animate-pulse" />
           <span>AWS Step Functions Standard Workflow • State Machine Execution</span>
         </div>
-        <h1 className="text-2xl sm:text-4xl font-display font-extrabold text-white">
-          Orchestrating Autonomous Legal Agents
+        <h1 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight">
+          Multi-Agent Orchestration <span className="text-gradient-teal">Pipeline</span>
         </h1>
-        <p className="text-xs sm:text-sm text-slate-400 mt-2 font-mono">
-          ARN: arn:aws:states:us-east-1:717139594049:stateMachine:GrievEasePipeline-dev
+        <p className="text-xs sm:text-sm text-slate-400 mt-1 font-mono">
+          Case ID: <span className="text-white font-bold">{caseData?.caseId || 'c_7bb19b36'}</span> • Execution ARN: <span className="text-aws-orange">{caseData?.executionArn || 'arn:aws:states:ap-south-1:...'}</span>
         </p>
       </div>
 
-      {/* 4-Agent Step Functions Flow Graph */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Interactive Flow Energy Beam (Visual Agent Nodes) */}
+      <div className="mb-6 hidden md:flex items-center justify-between px-8 py-4 glass-panel rounded-3xl border border-white/10 relative overflow-hidden">
+        {stages.map((stage, idx) => {
+          const isDone = idx < currentStageIndex;
+          const isCurrent = idx === currentStageIndex;
+          const isNext = idx > currentStageIndex;
+
+          return (
+            <React.Fragment key={stage.id}>
+              <div className="flex flex-col items-center gap-2 z-10">
+                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xs transition-all duration-300 border ${
+                  isCurrent 
+                    ? 'bg-brand-500 text-surface-950 border-brand-300 shadow-glow-teal scale-110' 
+                    : isDone 
+                    ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' 
+                    : 'bg-surface-900 text-slate-500 border-white/5'
+                }`}>
+                  {isDone ? <Check className="w-4 h-4" /> : idx + 1}
+                </div>
+                <span className={`text-[11px] font-mono font-semibold ${isCurrent ? 'text-brand-300' : isDone ? 'text-slate-300' : 'text-slate-500'}`}>
+                  {stage.id}
+                </span>
+              </div>
+
+              {idx < stages.length - 1 && (
+                <div className="flex-1 mx-4 h-0.5 relative">
+                  <div className="w-full h-full bg-surface-800" />
+                  {isDone && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-brand-500 shadow-[0_0_10px_#2dd4bf]" />
+                  )}
+                  {isCurrent && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-transparent animate-pulse" />
+                  )}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+
+      {/* Bento Grid: 4 Pipeline Agents */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stages.map((stage, idx) => {
           const Icon = stage.icon;
-          const isCurrent = currentStageIndex === idx;
-          const isDone = currentStageIndex > idx;
-          const isPending = currentStageIndex < idx;
-          const isGuardRejection = stage.id === "COMPLIANCE_GUARD" && isDone && caseData?.isGuardDemo;
+          const isCurrent = idx === currentStageIndex;
+          const isDone = idx < currentStageIndex;
+          const isRejectedGuard = stage.id === "COMPLIANCE_GUARD" && isDone && caseData?.isGuardDemo;
 
           return (
             <div
               key={stage.id}
-              className={`p-5 rounded-2xl transition-all relative overflow-hidden flex flex-col justify-between ${
+              className={`p-5 rounded-3xl border transition-all duration-300 relative overflow-hidden flex flex-col justify-between ${
                 isCurrent 
-                  ? 'glass-card-glow border-brand-400/80 shadow-glow-teal ring-1 ring-brand-400/50' 
+                  ? 'glass-card-glow border-brand-400/80 shadow-glow-teal scale-[1.02]' 
+                  : isRejectedGuard
+                  ? 'glass-card-glow-rose border-rose-500/80 shadow-glow-rose'
                   : isDone 
-                    ? isGuardRejection
-                      ? 'bg-rose-950/30 border-rose-500/40 shadow-md'
-                      : 'bg-surface-850/90 border-teal-500/30 shadow-md' 
-                    : 'glass-panel opacity-50 border-white/5'
+                  ? 'glass-panel border-teal-500/30' 
+                  : 'bg-surface-950/60 border-white/5 opacity-50'
               }`}
             >
-              {/* Active Pulse Header */}
               {isCurrent && (
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-brand-400 to-teal-300 animate-pulse" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-brand-500/20 blur-xl pointer-events-none" />
               )}
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <div className={`p-2.5 rounded-xl ${
+                  <div className={`p-2.5 rounded-2xl border ${
                     isCurrent 
-                      ? 'bg-brand-500 text-surface-950 shadow-sm' 
+                      ? 'bg-brand-500 text-surface-950 border-brand-400 shadow-glow-teal' 
+                      : isRejectedGuard
+                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/40'
                       : isDone 
-                        ? isGuardRejection ? 'bg-rose-500/20 text-rose-400' : 'bg-teal-500/20 text-teal-300' 
-                        : 'bg-surface-800 text-slate-400'
+                      ? 'bg-teal-500/20 text-teal-300 border-teal-500/40' 
+                      : 'bg-surface-800 text-slate-500 border-white/5'
                   }`}>
                     <Icon className="w-5 h-5" />
                   </div>
 
                   <div>
-                    {isDone ? (
-                      isGuardRejection ? (
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                          REJECTED
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">
-                          PASSED
-                        </span>
-                      )
-                    ) : isCurrent ? (
-                      <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 flex items-center gap-1">
-                        <Loader2 className="w-3 h-3 animate-spin text-brand-400" /> RUNNING
+                    {isCurrent ? (
+                      <span className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold bg-brand-500/20 text-brand-300 border border-brand-500/40 rounded-full animate-pulse">
+                        <Loader2 className="w-3 h-3 animate-spin" /> RUNNING
+                      </span>
+                    ) : isRejectedGuard ? (
+                      <span className="px-2.5 py-1 text-[10px] font-mono font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded-full">
+                        INTERCEPTED
+                      </span>
+                    ) : isDone ? (
+                      <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-mono font-bold bg-teal-500/20 text-teal-300 border border-teal-500/40 rounded-full">
+                        <CheckCircle2 className="w-3 h-3" /> DONE
                       </span>
                     ) : (
-                      <span className="text-[10px] font-mono text-slate-500">QUEUED</span>
+                      <span className="px-2.5 py-1 text-[10px] font-mono text-slate-500 bg-surface-900 rounded-full">
+                        QUEUED
+                      </span>
                     )}
                   </div>
                 </div>
 
-                <h3 className="text-sm font-bold text-white tracking-tight">
-                  {stage.name}
-                </h3>
-                <span className="text-[11px] font-mono text-aws-orange block mt-0.5">
-                  {stage.service}
-                </span>
-
-                <p className="text-[11px] text-slate-400 mt-2 line-clamp-2 leading-relaxed">
-                  {stage.desc}
-                </p>
+                <h3 className="text-sm font-bold text-white mb-0.5">{stage.name}</h3>
+                <span className="text-[11px] font-mono text-teal-300 font-semibold">{stage.service}</span>
+                <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">{stage.desc}</p>
               </div>
 
-              {/* Node Telemetry Footer */}
-              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-400">
-                <span>MEM: {stage.memory}</span>
-                <span>{stageTimes[stage.id] || (isCurrent ? 'processing...' : '0ms')}</span>
+              <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px] font-mono">
+                <span className="text-slate-400">Alloc: {stage.memory}</span>
+                {stageTimes[stage.id] ? (
+                  <span className="text-emerald-400 font-bold">{stageTimes[stage.id]}</span>
+                ) : isCurrent ? (
+                  <span className="text-brand-400 animate-pulse">Executing...</span>
+                ) : (
+                  <span className="text-slate-500">--</span>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* CloudWatch Telemetry Live Console Drawer */}
-      <div className="glass-panel p-5 rounded-2xl border border-white/10 shadow-2xl relative overflow-hidden">
-        <div className="flex items-center justify-between mb-3 pb-2 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <Terminal className="w-4 h-4 text-brand-400" />
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Live CloudWatch Telemetry Stream
+      {/* High-Tech AWS CloudWatch Live Log Console */}
+      <div className="glass-panel p-5 sm:p-6 rounded-3xl border border-white/10 relative overflow-hidden">
+        
+        {/* Terminal Controls Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3.5 border-b border-white/10">
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
+            </div>
+            <span className="text-xs font-mono font-bold text-slate-200 flex items-center gap-2 ml-2">
+              <Terminal className="w-4 h-4 text-brand-400" />
+              AWS CloudWatch Live Execution Logs
             </span>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] font-mono text-slate-400">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filter Pills */}
+            <div className="flex items-center bg-surface-950 p-1 rounded-xl border border-white/5 text-[10px] font-mono">
+              {['ALL', 'LAMBDA', 'STEP_FUNCTIONS', 'ERRORS'].map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setLogFilter(f)}
+                  className={`px-2 py-0.5 rounded-lg transition-colors ${
+                    logFilter === f ? 'bg-surface-800 text-white font-bold' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {f === 'STEP_FUNCTIONS' ? 'StepFunctions' : f}
+                </button>
+              ))}
+            </div>
+
             {liveTokens > 0 && (
-              <span className="text-teal-400 flex items-center gap-1">
-                <Zap className="w-3 h-3 fill-teal-400" /> ~{liveTokens} tokens streamed
+              <span className="text-xs font-mono text-teal-300 bg-teal-500/10 px-2.5 py-1 rounded-xl border border-teal-500/20 flex items-center gap-1.5">
+                <Cpu className="w-3.5 h-3.5 text-brand-400" />
+                <span>Tokens: {liveTokens}</span>
               </span>
             )}
-            <span className="flex items-center gap-1 text-emerald-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" /> Streaming
-            </span>
+
+            <button
+              onClick={handleCopyLogs}
+              className="px-3 py-1 text-xs font-semibold rounded-xl bg-surface-800 hover:bg-surface-750 text-slate-300 hover:text-white border border-white/10 flex items-center gap-1.5 transition-colors"
+            >
+              {copiedLogs ? <Check className="w-3.5 h-3.5 text-teal-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedLogs ? 'Copied' : 'Copy'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Console Log Window */}
-        <div className="h-40 overflow-y-auto font-mono text-[11px] leading-relaxed space-y-1 text-slate-300 bg-surface-950/80 p-3.5 rounded-xl border border-white/5">
-          {logs.map((log, idx) => (
-            <div key={idx} className="flex items-start gap-2">
-              <span className="text-slate-500 select-none">&gt;</span>
-              <span className={log.includes("REJECTION") ? "text-rose-400 font-bold" : log.includes("SUCCEEDED") ? "text-teal-300" : "text-slate-300"}>
+        {/* Live Terminal Output Window */}
+        <div className="bg-surface-950/95 rounded-2xl p-4 font-mono text-xs text-slate-300 h-56 overflow-y-auto space-y-1.5 border border-white/5">
+          {filteredLogs.map((log, idx) => (
+            <div key={idx} className="flex items-start gap-2 leading-relaxed">
+              <span className="text-brand-400 select-none">❯</span>
+              <span className={
+                log.includes("⚠️") || log.includes("REJECTION") 
+                  ? "text-rose-400 font-bold" 
+                  : log.includes("SUCCEEDED") 
+                  ? "text-teal-300 font-semibold" 
+                  : log.includes("[AWS::StepFunctions]") 
+                  ? "text-aws-orange font-medium" 
+                  : "text-slate-300"
+              }>
                 {log}
               </span>
             </div>
           ))}
           <div ref={terminalEndRef} />
         </div>
+
       </div>
 
     </div>

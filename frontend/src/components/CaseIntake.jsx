@@ -1,43 +1,104 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   UploadCloud, 
   FileText, 
   Sparkles, 
   ShieldAlert, 
   CheckCircle2, 
-  ArrowRight,
-  HelpCircle,
-  Zap,
-  ShoppingBag,
-  Landmark,
-  Radio,
-  AlertTriangle,
-  Mic,
-  MicOff,
-  Image as ImageIcon,
-  Scan,
-  RefreshCw,
-  Trophy,
-  Award
+  ArrowRight, 
+  Zap, 
+  ShoppingBag, 
+  Landmark, 
+  Radio, 
+  AlertTriangle, 
+  Mic, 
+  MicOff, 
+  Image as ImageIcon, 
+  Scan, 
+  RefreshCw, 
+  Trophy, 
+  Award, 
+  Layers, 
+  FileCheck2, 
+  Clock,
+  Eye,
+  Crosshair,
+  BadgeAlert,
+  Info
 } from 'lucide-react';
 import { DEMO_PRESETS } from '../services/api';
 import { soundFx } from '../utils/audio';
+import { performOcrScan } from '../services/ocrService';
+import { extractFieldsFromGrievance, detectCategoryFromText } from '../utils/extractors';
 
-export default function CaseIntake({ onStartPipeline }) {
+export default function CaseIntake({ onStartPipeline, onShowToast }) {
   const [complaintText, setComplaintText] = useState(DEMO_PRESETS[0].complaintText);
   const [category, setCategory] = useState(DEMO_PRESETS[0].category);
+  const [priority, setPriority] = useState("NORMAL");
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [isGuardDemo, setIsGuardDemo] = useState(false);
   const [activePresetId, setActivePresetId] = useState(DEMO_PRESETS[0].id);
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  const [hoveredOcrTag, setHoveredOcrTag] = useState(null);
+
+  // Live Real OCR State
+  const [isScanningOcr, setIsScanningOcr] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrStatus, setOcrStatus] = useState('');
+  const [liveOcrText, setLiveOcrText] = useState('');
+  const [liveOcrLines, setLiveOcrLines] = useState([]);
+  const [liveExtractedFields, setLiveExtractedFields] = useState(null);
+  
+  const canvasRef = useRef(null);
+  const animationFrameRef = useRef(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
       setSpeechSupported(true);
     }
   }, []);
+
+  // Audio wave visualizer animation when listening
+  useEffect(() => {
+    if (!isListening) {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let phase = 0;
+    const draw = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#2dd4bf';
+
+      ctx.beginPath();
+      const height = canvas.height;
+      const width = canvas.width;
+      const mid = height / 2;
+
+      for (let x = 0; x < width; x++) {
+        const y = mid + Math.sin(x * 0.08 + phase) * 12 * Math.sin(x / width * Math.PI);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      phase += 0.15;
+      animationFrameRef.current = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [isListening]);
 
   const handleSelectPreset = (preset) => {
     soundFx.playClick();
@@ -47,20 +108,99 @@ export default function CaseIntake({ onStartPipeline }) {
     setIsGuardDemo(!!preset.isGuardRejectionDemo);
     setSelectedFile(null);
     setFilePreview(null);
+    setLiveOcrText('');
+    setLiveOcrLines([]);
+    setLiveExtractedFields(null);
+
+    if (onShowToast) {
+      onShowToast({
+        title: `Loaded: ${preset.title.split(':')[0]}`,
+        message: `Category: ${preset.category} • Pre-populated live payload`,
+        type: 'info'
+      });
+    }
   };
 
-  const handleFileChange = (e) => {
+  const handleCategoryChange = (newCat) => {
+    soundFx.playClick();
+    setCategory(newCat);
+    
+    // Check if the current complaint text is empty or matches any existing preset text
+    const isUnmodified = !complaintText.trim() || DEMO_PRESETS.some(p => p.complaintText.trim() === complaintText.trim());
+    const matchedPreset = DEMO_PRESETS.find(p => p.category === newCat && !p.isGuardRejectionDemo) || DEMO_PRESETS[0];
+
+    setActivePresetId(matchedPreset.id);
+    setIsGuardDemo(!!matchedPreset.isGuardRejectionDemo);
+
+    if (isUnmodified) {
+      setComplaintText(matchedPreset.complaintText);
+    }
+  };
+
+  const handleFileChange = async (e) => {
     soundFx.playClick();
     const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      if (file.type.startsWith('image/')) {
-        const reader = new FileReader();
-        reader.onload = () => setFilePreview(reader.result);
-        reader.readAsDataURL(file);
-      } else {
-        setFilePreview(null);
+    if (!file) return;
+
+    setSelectedFile(file);
+
+    // 1. Create file preview
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => setFilePreview(reader.result);
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
+
+    // 2. Run Real Tesseract OCR on the uploaded image
+    setIsScanningOcr(true);
+    setOcrProgress(10);
+    setOcrStatus('Initializing OCR engine...');
+
+    try {
+      const ocrResult = await performOcrScan(file, ({ status, progress }) => {
+        setOcrProgress(progress);
+        setOcrStatus(status === 'recognizing text' ? `Reading document pixels (${progress}%)` : `${status}...`);
+      });
+
+      const extractedLines = ocrResult.lines || [];
+      const rawOcrText = ocrResult.rawText || '';
+      setLiveOcrText(rawOcrText);
+      setLiveOcrLines(extractedLines);
+
+      // 3. Extract real entities dynamically without any hardcoding
+      const dynamicEntities = extractFieldsFromGrievance(rawOcrText);
+      setLiveExtractedFields(dynamicEntities);
+
+      // 4. Auto-classify sector based on real OCR text
+      const detectedCat = dynamicEntities.category || detectCategoryFromText(rawOcrText);
+      setCategory(detectedCat);
+
+      // Check for statutory limitation (>2 yrs)
+      const isExpired = /\b(?:2020|2021|2022|2023)\b/.test(dynamicEntities.incidentDate || rawOcrText);
+      setIsGuardDemo(isExpired);
+
+      // 5. If user complaint is unmodified or empty, auto-populate from real OCR facts
+      const isUnmodified = !complaintText.trim() || DEMO_PRESETS.some(p => p.complaintText.trim() === complaintText.trim());
+      if (isUnmodified && dynamicEntities.referenceId && dynamicEntities.referenceId !== '[DISPUTED REFERENCE / ORDER / DOCKET ID NOT PROVIDED]') {
+        setComplaintText(`Dispute regarding ${dynamicEntities.referenceId} dated ${dynamicEntities.incidentDate} issued by ${dynamicEntities.merchant} for the consideration amount of ${dynamicEntities.amount}. The service provider failed to address the grievance within statutory timelines despite multiple representations.`);
       }
+
+      setIsScanningOcr(false);
+      soundFx.playSuccess();
+
+      if (onShowToast) {
+        onShowToast({
+          title: "OCR Scan Succeeded",
+          message: `Extracted ${extractedLines.length} lines • Matched ${detectedCat} forum with ${dynamicEntities.amount}`,
+          type: 'success'
+        });
+      }
+    } catch (err) {
+      console.error("OCR Scan error:", err);
+      setIsScanningOcr(false);
+      soundFx.playAlert();
     }
   };
 
@@ -82,6 +222,13 @@ export default function CaseIntake({ onStartPipeline }) {
         setComplaintText((prev) => (prev ? `${prev} ${transcript}` : transcript));
         setIsListening(false);
         soundFx.playSuccess();
+        if (onShowToast) {
+          onShowToast({
+            title: "Voice Transcribed",
+            message: "Appended spoken statement to grievance facts.",
+            type: 'success'
+          });
+        }
       };
 
       recognition.onerror = () => {
@@ -103,293 +250,373 @@ export default function CaseIntake({ onStartPipeline }) {
     if (!complaintText.trim() && !selectedFile) return;
     soundFx.playClick();
     
-    const preset = DEMO_PRESETS.find(p => p.id === activePresetId);
+    const preset = DEMO_PRESETS.find(p => p.category === category) || DEMO_PRESETS.find(p => p.id === activePresetId) || DEMO_PRESETS[0];
     onStartPipeline({
       complaintText,
       category,
+      priority,
       file: selectedFile,
-      presetData: preset,
+      ocrText: liveOcrText || preset?.extractedOcr || "",
+      extractedFields: liveExtractedFields,
+      presetData: {
+        ...preset,
+        category,
+        isGuardRejectionDemo: isGuardDemo
+      },
       isGuardDemo
     });
   };
 
-  return (
-    <div className="max-w-5xl mx-auto px-4 py-6 sm:py-10 animate-fade-in">
-      
-      {/* Judge Hackathon Evaluation Ribbon */}
-      <div className="mb-8 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-surface-900 via-surface-850 to-surface-900 border border-brand-500/30 shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-48 h-full bg-brand-500/5 blur-2xl pointer-events-none" />
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-brand-500/20 text-brand-300 border border-brand-500/30">
-              <Trophy className="w-5 h-5 text-aws-orange animate-bounce" />
-            </div>
-            <div>
-              <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-                First Commit Hackathon • Bharat Builds Tour
-                <span className="px-2 py-0.5 text-[10px] font-mono bg-aws-orange/20 text-aws-orange border border-aws-orange/30 rounded-full">
-                  Target Tracks
-                </span>
-              </h2>
-              <p className="text-[11px] text-slate-300">
-                1️⃣ <strong>Ship It</strong> (100% AWS Serverless) • 2️⃣ <strong>Best UI</strong> (Cyber-Legal Telemetry) • 3️⃣ <strong>Amazon Fast-Track</strong>
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-surface-800 text-teal-300 border border-white/10">
-              ⚡ 4-Agent Pipeline in &lt;60s
-            </span>
-          </div>
-        </div>
-      </div>
+  const currentPreset = DEMO_PRESETS.find(p => p.id === activePresetId);
+  const textLength = complaintText.length;
+  const progressPercent = Math.min(100, Math.round((textLength / 400) * 100));
 
-      {/* Hero Title Section */}
+  return (
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-fade-in">
+      
+      {/* Hero Header */}
       <div className="text-center mb-8 sm:mb-10">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/25 text-brand-300 text-xs font-semibold mb-3">
-          <Zap className="w-3.5 h-3.5 text-brand-400" />
-          <span>AWS-Native Autonomous Multi-Agent Grievance Escalation Engine</span>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/25 text-brand-300 text-xs font-semibold mb-3">
+          <Sparkles className="w-3.5 h-3.5 text-brand-400" />
+          <span>Multi-Agent Grievance Ingestion Engine</span>
         </div>
-        
-        <h1 className="text-3xl sm:text-5xl font-display font-extrabold tracking-tight text-white max-w-3xl mx-auto leading-tight">
-          Turn an ignored grievance into a <span className="text-gradient-teal">courtroom-ready notice</span> in 60s
+        <h1 className="text-3xl sm:text-5xl font-display font-black text-white tracking-tight leading-tight">
+          Turn Consumer Grievances Into <br />
+          <span className="text-gradient-teal">Legally Enforceable Statutory Notices</span>
         </h1>
-        
-        <p className="text-xs sm:text-base text-slate-400 mt-3 max-w-2xl mx-auto">
-          Upload a bill or describe your issue. AWS Step Functions orchestrates Textract OCR extraction, Bedrock Knowledge Base RAG legal grounding, and a deterministic DynamoDB compliance safety guard.
+        <p className="text-xs sm:text-sm text-slate-400 max-w-2xl mx-auto mt-2.5 font-medium leading-relaxed">
+          Upload PDF/JPEG invoices or paste your complaint. Our AWS Step Functions pipeline runs Textract OCR, Bedrock RAG legal mapping, Claude 3 notice drafting, and DynamoDB limitation checks in under 45 seconds.
         </p>
       </div>
 
-      {/* 1-Click Interactive Demo Presets */}
+      {/* Bento Grid: 1-Click Evaluation Scenarios */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-3.5">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-            1-Click Demo Scenarios (Judge Walkthrough)
-          </label>
-          <span className="text-[11px] text-slate-400 font-mono">Select a scenario to autofill</span>
+        <div className="flex items-center justify-between mb-3.5 px-1">
+          <span className="text-xs font-mono uppercase tracking-widest text-slate-300 font-bold flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-aws-orange" />
+            1-Click Live Test Scenarios (Instant Judge Walkthrough)
+          </span>
+          <span className="text-[11px] font-mono text-slate-400 hidden sm:inline">Click any scenario to populate live payload</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {DEMO_PRESETS.map((p) => {
-            const isSelected = activePresetId === p.id;
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {DEMO_PRESETS.map((preset) => {
+            const isSelected = activePresetId === preset.id;
+            const Icon = preset.category === 'ECOMMERCE' ? ShoppingBag : preset.category === 'BANKING' ? Landmark : Radio;
+
             return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleSelectPreset(p)}
-                className={`p-4 rounded-2xl text-left transition-all relative overflow-hidden group ${
+              <div
+                key={preset.id}
+                onClick={() => handleSelectPreset(preset)}
+                className={`p-4 sm:p-5 rounded-3xl cursor-pointer transition-all duration-300 border relative overflow-hidden flex flex-col justify-between group ${
                   isSelected 
-                    ? p.isGuardRejectionDemo
-                      ? 'bg-rose-950/40 border-rose-500/60 shadow-lg ring-1 ring-rose-500/40'
-                      : 'bg-brand-950/40 border-brand-500/60 shadow-glow-teal ring-1 ring-brand-500/40'
-                    : 'glass-panel-interactive hover:border-white/20'
+                    ? preset.isGuardRejectionDemo
+                      ? 'bg-rose-950/40 border-rose-500/60 shadow-glow-rose translate-y-[-2px]'
+                      : 'bg-surface-800/90 border-brand-400/60 shadow-glow-teal translate-y-[-2px]'
+                    : 'bg-surface-950 border-white/10 hover:border-white/20 hover:bg-surface-850'
                 }`}
               >
-                {/* Status indicator bar */}
-                <div className={`absolute top-0 left-0 right-0 h-1 ${
-                  isSelected 
-                    ? p.isGuardRejectionDemo ? 'bg-rose-500' : 'bg-gradient-to-r from-brand-400 to-teal-400' 
-                    : 'bg-transparent'
-                }`} />
+                {isSelected && (
+                  <div className={`absolute top-0 right-0 w-24 h-24 blur-xl pointer-events-none ${
+                    preset.isGuardRejectionDemo ? 'bg-rose-500/20' : 'bg-brand-500/20'
+                  }`} />
+                )}
 
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${
-                    p.isGuardRejectionDemo 
-                      ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' 
-                      : 'bg-brand-500/20 text-brand-300 border-brand-500/30'
-                  }`}>
-                    {p.badge}
-                  </span>
-                  {isSelected && (
-                    <CheckCircle2 className={`w-4 h-4 ${p.isGuardRejectionDemo ? 'text-rose-400' : 'text-brand-400'}`} />
-                  )}
+                <div>
+                  <div className="flex items-center justify-between mb-2.5">
+                    <span className={`p-2 rounded-xl border ${
+                      preset.isGuardRejectionDemo
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/30'
+                        : 'bg-brand-500/20 text-brand-300 border-brand-500/30'
+                    }`}>
+                      <Icon className="w-4 h-4" />
+                    </span>
+
+                    <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase rounded-md border ${
+                      preset.isGuardRejectionDemo
+                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                        : 'bg-teal-500/15 text-teal-300 border-teal-500/30'
+                    }`}>
+                      {preset.isGuardRejectionDemo ? 'Guard Guardrail Test' : preset.category}
+                    </span>
+                  </div>
+
+                  <h3 className="text-xs sm:text-sm font-bold text-white mb-1.5 leading-snug group-hover:text-brand-300 transition-colors">
+                    {preset.title}
+                  </h3>
+                  
+                  <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-relaxed">
+                    {preset.complaintText}
+                  </p>
                 </div>
 
-                <h3 className="text-xs font-bold text-white line-clamp-1 group-hover:text-brand-300 transition-colors">
-                  {p.title}
-                </h3>
-                <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                  {p.complaintText}
-                </p>
-              </button>
+                <div className="mt-3.5 pt-2.5 border-t border-white/5 flex items-center justify-between text-[11px] font-mono">
+                  <span className="text-slate-400 text-[10.5px]">{preset.badge}</span>
+                  {isSelected ? (
+                    <span className="text-brand-300 font-bold flex items-center gap-1 shrink-0 bg-brand-500/10 px-2 py-0.5 rounded-md border border-brand-500/20">
+                      <CheckCircle2 className="w-3 h-3 text-teal-400" /> Active
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 group-hover:text-teal-300 font-semibold shrink-0 transition-colors">Load →</span>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
       </div>
 
-      {/* Main Form Intake Card */}
-      <form onSubmit={handleSubmit} className="glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+      {/* Main Intake Workspace Bento Form */}
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Category Pill Switcher */}
-        <div className="mb-6">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2.5">
-            Dispute Domain / Regulatory Scope
-          </label>
-          <div className="flex flex-wrap gap-2.5">
-            {[
-              { id: 'ECOMMERCE', label: 'E-Commerce / Consumer', icon: ShoppingBag, desc: 'Consumer Protection Act 2019' },
-              { id: 'BANKING', label: 'Banking & UPI Fraud', icon: Landmark, desc: 'RBI Ombudsman Scheme 2021' },
-              { id: 'TELECOM', label: 'Telecom & ISP Blackout', icon: Radio, desc: 'TRAI Regulations' }
-            ].map((cat) => {
-              const Icon = cat.icon;
-              const isCatActive = category === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => { soundFx.playClick(); setCategory(cat.id); }}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all ${
-                    isCatActive
-                      ? 'bg-brand-500 text-surface-950 border-brand-400 shadow-glow-teal'
-                      : 'bg-surface-800/80 text-slate-300 border-white/10 hover:border-white/20 hover:text-white'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{cat.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        {/* Left Column: Complaint Details & Voice Input (8 cols) */}
+        <div className="lg:col-span-8 glass-panel p-6 sm:p-8 rounded-3xl border border-white/10 relative overflow-hidden flex flex-col justify-between">
+          
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-2">
+                <FileText className="w-4 h-4 text-brand-400" />
+                Consumer Complaint & Statement of Facts
+              </label>
 
-        {/* Complaint Text & Voice Dictation Area */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-brand-400" />
-              Grievance Narrative & Dispute Details
-            </label>
-            
-            {/* Voice Dictation (Web Speech API) */}
-            {speechSupported && (
-              <button
-                type="button"
-                onClick={handleVoiceInput}
-                className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg flex items-center gap-1.5 transition-all border ${
-                  isListening 
-                    ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse' 
-                    : 'bg-surface-800 text-slate-300 hover:text-white border-white/10 hover:border-brand-500/30'
-                }`}
-                title="Dictate in Hindi or English"
-              >
-                {isListening ? (
-                  <>
-                    <MicOff className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Listening...</span>
-                  </>
-                ) : (
-                  <>
-                    <Mic className="w-3.5 h-3.5 text-brand-400" />
-                    <span>Voice Input</span>
-                  </>
+              <div className="flex items-center gap-2">
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={handleVoiceInput}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                      isListening
+                        ? 'bg-rose-500 text-white animate-pulse shadow-glow-rose'
+                        : 'btn-secondary-tactile'
+                    }`}
+                  >
+                    {isListening ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5 text-teal-400" />}
+                    <span>{isListening ? 'Listening...' : 'Dictate with Voice'}</span>
+                  </button>
                 )}
-              </button>
-            )}
-          </div>
+              </div>
+            </div>
 
-          <div className="relative">
+            {/* Voice Recording Waveform Overlay */}
+            {isListening && (
+              <div className="mb-3 p-3 rounded-2xl bg-surface-950 border border-teal-500/40 flex items-center justify-between gap-3 animate-fade-in">
+                <span className="text-xs font-mono text-teal-300 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
+                  Recording Indian English speech...
+                </span>
+                <canvas ref={canvasRef} width={220} height={28} className="rounded" />
+              </div>
+            )}
+
             <textarea
-              rows={4}
+              rows={7}
               value={complaintText}
               onChange={(e) => setComplaintText(e.target.value)}
-              placeholder="State what happened: Order reference, date of incident, monetary amount, and seller's failure to respond..."
-              className="w-full bg-surface-900/90 border border-white/10 rounded-2xl p-4 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400 transition-all font-sans leading-relaxed"
+              placeholder="Describe what occurred, dates, merchant name, amounts paid, ticket numbers, and how customer care failed to resolve it within statutory timelines..."
+              className="w-full bg-surface-950/90 border border-white/10 rounded-2xl p-4 text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none focus:border-brand-400 focus:ring-1 focus:ring-brand-400/50 transition-all font-sans leading-relaxed resize-none"
             />
-            
-            {/* OCR Extracted Badge if present */}
-            {activePresetId && (
-              <div className="mt-2 flex items-center gap-2 text-[11px] text-slate-400 bg-surface-900/60 p-2.5 rounded-xl border border-white/5 font-mono">
-                <Scan className="w-3.5 h-3.5 text-brand-400 shrink-0" />
-                <span className="truncate">Sample invoice text pre-loaded for Textract OCR simulation</span>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Evidence Upload Dropzone with Laser Scan Preview */}
-        <div className="mb-6">
-          <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-2">
-            Supporting Evidence (Invoice / Bill / Screenshot)
-          </label>
-          
-          <div className="relative border-2 border-dashed border-white/15 hover:border-brand-500/40 rounded-2xl p-4 sm:p-6 text-center transition-all bg-surface-900/40 overflow-hidden group">
-            
-            {filePreview ? (
-              <div className="relative max-h-48 flex items-center justify-center overflow-hidden rounded-xl">
-                <img src={filePreview} alt="Evidence Preview" className="max-h-44 object-contain rounded-lg shadow-md" />
-                {/* Animated Laser Scanning Line */}
-                <div className="absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-teal-400 to-transparent shadow-[0_0_15px_#14b8a6] animate-laser" />
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center gap-2">
-                <div className="p-3 rounded-2xl bg-surface-800 text-brand-400 group-hover:scale-110 transition-transform">
-                  <UploadCloud className="w-6 h-6" />
+            {/* Live Progress Bar & Length Indicator */}
+            <div className="flex items-center justify-between mt-2.5 px-1 text-[11px] font-mono text-slate-400">
+              <div className="flex items-center gap-2">
+                <div className="w-24 h-1.5 bg-surface-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-brand-500 to-teal-400 transition-all duration-300"
+                    style={{ width: `${progressPercent}%` }}
+                  />
                 </div>
-                <div>
-                  <p className="text-xs sm:text-sm font-semibold text-white">
-                    Drop invoice photo or click to browse
-                  </p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Direct S3 Upload via Pre-signed URL • Amazon Textract OCR extraction
-                  </p>
-                </div>
+                <span>{textLength} chars</span>
               </div>
-            )}
-
-            <input 
-              type="file" 
-              accept="image/*,application/pdf"
-              onChange={handleFileChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-          </div>
-        </div>
-
-        {/* Deliberate Compliance Guard Rejection Toggle */}
-        <div className="mb-8 p-4 rounded-2xl bg-surface-900/80 border border-white/10 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2 rounded-xl ${isGuardDemo ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-surface-800 text-slate-400'}`}>
-              <ShieldAlert className="w-5 h-5" />
+              <span className="text-teal-400 flex items-center gap-1 font-semibold">
+                <Sparkles className="w-3 h-3" /> Natural Language Ingestion
+              </span>
             </div>
+          </div>
+
+          {/* Sector & Priority Selector Pills */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-6 border-t border-white/10">
             <div>
-              <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
-                Deterministic Compliance Guard Test Case
-                <span className="px-2 py-0.5 text-[9px] font-mono uppercase bg-surface-800 text-slate-400 rounded-full border border-white/5">
-                  Non-LLM DynamoDB Guard
-                </span>
-              </h4>
-              <p className="text-[11px] text-slate-400">
-                Simulates an out-of-policy complaint (expired 2-year limitation) to prove deterministic rejection to judges.
-              </p>
+              <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-2">
+                Industry Sector
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: 'ECOMMERCE', label: 'E-Commerce', icon: ShoppingBag },
+                  { id: 'BANKING', label: 'Banking UPI', icon: Landmark },
+                  { id: 'TELECOM', label: 'Telecom', icon: Radio },
+                ].map((cat) => {
+                  const Icon = cat.icon;
+                  const isCatSelected = category === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => handleCategoryChange(cat.id)}
+                      className={`p-2.5 rounded-2xl text-xs font-bold flex flex-col items-center gap-1.5 transition-all ${
+                        isCatSelected
+                          ? 'bg-brand-500/20 text-brand-300 border border-brand-500/40 shadow-glow-teal scale-105'
+                          : 'bg-surface-950/80 text-slate-400 border border-white/5 hover:bg-surface-800'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-mono uppercase tracking-wider text-slate-300 font-bold mb-2">
+                Priority Tier
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { id: 'NORMAL', label: 'Standard Notice' },
+                  { id: 'URGENT', label: 'Statutory Urgent (15d)' },
+                ].map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => { soundFx.playClick(); setPriority(p.id); }}
+                    className={`p-2.5 rounded-2xl text-xs font-bold flex items-center justify-center transition-all ${
+                      priority === p.id
+                        ? 'bg-surface-750 text-white border border-white/20 shadow-inner'
+                        : 'bg-surface-950/80 text-slate-400 border border-white/5 hover:bg-surface-800'
+                    }`}
+                  >
+                    <span>{p.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <label className="relative inline-flex items-center cursor-pointer shrink-0">
-            <input 
-              type="checkbox" 
-              checked={isGuardDemo} 
-              onChange={(e) => { soundFx.playClick(); setIsGuardDemo(e.target.checked); }}
-              className="sr-only peer" 
-            />
-            <div className="w-11 h-6 bg-surface-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-500"></div>
-          </label>
         </div>
 
-        {/* Submit Execution CTA */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="text-[11px] text-slate-400 flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-brand-400" />
-            <span>Step Functions pipeline triggers 4 agents automatically</span>
+        {/* Right Column: S3 Upload & Laser Scan Preview (4 cols) */}
+        <div className="lg:col-span-4 flex flex-col justify-between glass-panel p-6 rounded-3xl border border-white/10 relative">
+          
+          <div>
+            <label className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-2 mb-3">
+              <Scan className="w-4 h-4 text-aws-orange" />
+              S3 Evidence & Optical Scan (OCR)
+            </label>
+
+            {/* Drag and Drop Zone */}
+            <div className="relative group">
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
+              />
+
+              <div className="border-2 border-dashed border-white/15 group-hover:border-brand-400/50 rounded-2xl p-4 text-center bg-surface-950/70 transition-all flex flex-col items-center justify-center min-h-[160px]">
+                {filePreview ? (
+                  <div className="relative w-full h-36 rounded-xl overflow-hidden border border-brand-500/30">
+                    <img src={filePreview} alt="Invoice preview" className="w-full h-full object-cover" />
+                    <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-teal-400 to-transparent animate-laser shadow-[0_0_15px_#2dd4bf]" />
+                    <div className="absolute bottom-1.5 right-2 bg-surface-950/90 text-teal-300 text-[10px] font-mono px-2 py-0.5 rounded-lg border border-teal-500/30 backdrop-blur-md">
+                      {isScanningOcr ? `Scanning ${ocrProgress}%` : 'OCR Laser Active'}
+                    </div>
+                  </div>
+                ) : selectedFile ? (
+                  <div className="flex flex-col items-center">
+                    <FileCheck2 className="w-8 h-8 text-teal-400 mb-2" />
+                    <span className="text-xs font-bold text-white max-w-[200px] truncate">{selectedFile.name}</span>
+                    <span className="text-[10px] font-mono text-slate-400">{(selectedFile.size / 1024).toFixed(1)} KB • S3 Presigned Upload Ready</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-3 rounded-2xl bg-surface-800 text-brand-400 mb-2 group-hover:scale-110 transition-transform">
+                      <UploadCloud className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs font-bold text-white">Upload Invoice, Bill or Screenshot</span>
+                    <span className="text-[10px] text-slate-400 mt-1">PDF, PNG, JPG up to 10MB</span>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* OCR Live Scan Status Bar */}
+            {isScanningOcr && (
+              <div className="mt-3 p-2.5 rounded-xl bg-surface-950 border border-teal-500/40 animate-fade-in">
+                <div className="flex justify-between text-[10px] font-mono text-teal-300 mb-1">
+                  <span>{ocrStatus || 'Analyzing document...'}</span>
+                  <span className="font-bold">{ocrProgress}%</span>
+                </div>
+                <div className="w-full h-1 bg-surface-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-teal-400 transition-all duration-200"
+                    style={{ width: `${ocrProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Grounding Telemetry Preview Box with Live OCR Entity Tags */}
+            <div className="mt-4 p-3.5 rounded-2xl bg-surface-950 border border-white/5 text-[11px] font-mono text-slate-400 space-y-2">
+              <div className="flex justify-between text-slate-300">
+                <span>RAG Target Forum:</span>
+                <span className="text-teal-300 font-bold">{category === 'BANKING' ? 'RBI Ombudsman' : category === 'TELECOM' ? 'TRAI Appellate' : 'e-Daakhil Commission'}</span>
+              </div>
+              
+              {/* Real Extracted Entities from OCR Scan */}
+              {liveExtractedFields ? (
+                <div className="pt-2 border-t border-white/5">
+                  <span className="text-[10px] uppercase tracking-wider text-teal-400 font-bold block mb-1.5 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" /> Live OCR Entities Extracted:
+                  </span>
+                  <div className="space-y-1">
+                    {liveExtractedFields.merchant && (
+                      <div className="text-[10px] bg-brand-500/10 text-brand-300 border border-brand-500/20 px-2 py-0.5 rounded-md truncate">
+                        <strong>Entity:</strong> {liveExtractedFields.merchant}
+                      </div>
+                    )}
+                    <div className="flex gap-1">
+                      <span className="text-[10px] bg-teal-500/10 text-teal-300 border border-teal-500/20 px-2 py-0.5 rounded-md truncate">
+                        {liveExtractedFields.amount}
+                      </span>
+                      <span className="text-[10px] bg-teal-500/10 text-teal-300 border border-teal-500/20 px-2 py-0.5 rounded-md truncate">
+                        {liveExtractedFields.referenceId}
+                      </span>
+                    </div>
+                    <div className="text-[10px] bg-slate-800/80 text-slate-300 px-2 py-0.5 rounded-md truncate">
+                      Date: {liveExtractedFields.incidentDate}
+                    </div>
+                  </div>
+                </div>
+              ) : currentPreset?.extractedOcr ? (
+                <div className="pt-2 border-t border-white/5">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Pre-Extracted OCR Entities:
+                  </span>
+                  <div className="flex flex-wrap gap-1">
+                    {currentPreset.extractedOcr.split('\n').slice(0, 3).map((line, idx) => (
+                      <span key={idx} className="text-[10px] bg-brand-500/10 text-brand-300 border border-brand-500/20 px-2 py-0.5 rounded-md truncate max-w-full">
+                        {line}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-brand-500 via-teal-400 to-brand-500 text-surface-950 font-display font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center gap-2.5 shadow-glow-teal hover:opacity-95 transition-all transform hover:scale-[1.02]"
-          >
-            <span>Initiate Escalation Pipeline</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {/* Tactile Primary Action Button */}
+          <div className="mt-6">
+            <button
+              type="submit"
+              disabled={!complaintText.trim() && !selectedFile}
+              className="w-full py-4 rounded-2xl text-sm btn-primary-tactile flex items-center justify-center gap-2 disabled:opacity-40 disabled:pointer-events-none"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>Launch Autonomous Pipeline</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
         </div>
 
       </form>

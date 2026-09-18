@@ -85,10 +85,15 @@ def handler(event, context):
     """
     print(f"[ComplianceGuard] Received event: {json.dumps(event)}")
     case_id = event.get("caseId")
-    forum = event.get("forum", "CONSUMER_FORUM")
-    draft_notice = event.get("draftNotice", "")
-    deadline_str = event.get("deadline", "")
-    extracted_fields = event.get("extractedFields", {})
+    
+    # Support both direct root event and Step Functions draftResult / classificationResult nesting
+    draft_result = event.get("draftResult", {})
+    classification_result = event.get("classificationResult", {})
+    
+    forum = event.get("forum") or classification_result.get("forum", "CONSUMER_FORUM")
+    draft_notice = event.get("draftNotice") or draft_result.get("draftNotice", "")
+    deadline_str = event.get("deadline") or classification_result.get("deadline", "")
+    extracted_fields = event.get("extractedFields") or draft_result.get("extractedFields", {})
 
     rules = get_compliance_rules_for_forum(forum)
     passed, failure_reason, failed_rule_id = evaluate_rules(
@@ -126,3 +131,4 @@ def handler(event, context):
         "forum": forum,
         "deadline": deadline_str
     }
+

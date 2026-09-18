@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,8 +6,10 @@
 
 @layer base {
   :root {
-    --bg-dark: #070A12;
-    --card-bg: rgba(15, 23, 42, 0.7);
+    --bg-dark: #07090E;
+    --card-bg: rgba(13, 19, 33, 0.78);
+    --border-subtle: rgba(255, 255, 255, 0.07);
+    --border-glow: rgba(20, 184, 166, 0.35);
   }
 
   body {
@@ -15,16 +17,32 @@
     color: #f1f5f9;
     font-family: 'Plus Jakarta Sans', sans-serif;
     background-image: 
-      radial-gradient(at 0% 0%, rgba(20, 184, 166, 0.12) 0px, transparent 55%),
-      radial-gradient(at 100% 0%, rgba(255, 153, 0, 0.10) 0px, transparent 55%),
-      radial-gradient(at 50% 100%, rgba(99, 102, 241, 0.08) 0px, transparent 60%);
+      radial-gradient(circle at 15% 10%, rgba(99, 102, 241, 0.1) 0%, transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(20, 184, 166, 0.12) 0%, transparent 48%),
+      radial-gradient(circle at 50% 85%, rgba(244, 63, 94, 0.08) 0%, transparent 52%),
+      radial-gradient(circle at 80% 90%, rgba(255, 153, 0, 0.07) 0%, transparent 45%);
     background-attachment: fixed;
     min-height: 100vh;
     overflow-x: hidden;
   }
 
+  /* SVG Noise Overlay for tactile physical depth */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.022;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', sans-serif;
+    letter-spacing: -0.02em;
   }
 
   code, pre, .font-mono {
@@ -34,58 +52,93 @@
 
 /* Glassmorphism & High-Tech Cards */
 .glass-panel {
-  background: rgba(13, 20, 36, 0.72);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  background: rgba(13, 19, 33, 0.76);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 12px 36px 0 rgba(0, 0, 0, 0.55);
 }
 
 .glass-panel-interactive {
-  background: rgba(13, 20, 36, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  background: rgba(13, 19, 33, 0.72);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 10px 30px -5px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glass-panel-interactive:hover {
-  background: rgba(20, 30, 52, 0.88);
-  border-color: rgba(20, 184, 166, 0.4);
-  box-shadow: 0 12px 35px -5px rgba(20, 184, 166, 0.2), 0 0 20px -5px rgba(20, 184, 166, 0.15);
-  transform: translateY(-2px);
+  background: rgba(18, 27, 47, 0.9);
+  border-color: rgba(20, 184, 166, 0.45);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.15),
+    0 18px 45px -8px rgba(20, 184, 166, 0.25),
+    0 0 25px -5px rgba(20, 184, 166, 0.15);
+  transform: translateY(-3px);
 }
 
-.glass-card-glow {
-  position: relative;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(20, 184, 166, 0.25);
-  box-shadow: 0 0 40px -5px rgba(20, 184, 166, 0.18);
+/* Tactile Button with Inset Specular Rim Highlight */
+.btn-primary-tactile {
+  background: linear-gradient(135deg, #14b8a6 0%, #06b6d4 100%);
+  color: #05080E;
+  font-weight: 800;
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
+    0 8px 24px -4px rgba(20, 184, 166, 0.45);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.glass-card-glow-amber {
-  position: relative;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 153, 0, 0.3);
-  box-shadow: 0 0 40px -5px rgba(255, 153, 0, 0.18);
+.btn-primary-tactile:hover {
+  filter: brightness(1.06);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
+    0 12px 30px -4px rgba(20, 184, 166, 0.6);
+  transform: translateY(-1px);
 }
 
-/* Background grid pattern */
-.bg-grid-pattern {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+.btn-primary-tactile:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(0, 0, 0, 0.2),
+    0 4px 12px -2px rgba(20, 184, 166, 0.4);
 }
 
-.bg-dot-pattern {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 24px 24px;
+/* Secondary Tactile Button */
+.btn-secondary-tactile {
+  background: rgba(22, 32, 54, 0.85);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Glowing text gradients */
+.btn-secondary-tactile:hover {
+  background: rgba(28, 41, 69, 0.95);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.btn-secondary-tactile:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Gradients */
 .text-gradient-teal {
-  background: linear-gradient(135deg, #5eead4 0%, #14b8a6 50%, #0d9488 100%);
+  background: linear-gradient(135deg, #6ee7b7 0%, #14b8a6 50%, #06b6d4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-indigo {
+  background: linear-gradient(135deg, #c7d2fe 0%, #6366f1 50%, #818cf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -96,10 +149,16 @@
   -webkit-text-fill-color: transparent;
 }
 
-.text-gradient-hero {
-  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 50%, #94a3b8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+/* Shimmer Loading Skeleton */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.09) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
 }
 
 /* Laser Scan Animation for OCR */
@@ -119,10 +178,10 @@
 }
 
 .animate-laser {
-  animation: laser-scan 2.4s ease-in-out infinite;
+  animation: laser-scan 2.2s ease-in-out infinite;
 }
 
-/* Flowing Energy Beam for Step Functions Graph */
+/* Flowing Energy Beam for Pipeline Graph */
 @keyframes energy-flow {
   0% {
     stroke-dashoffset: 100;
@@ -137,20 +196,6 @@
   animation: energy-flow 1.5s linear infinite;
 }
 
-/* Pulse Glow */
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 20px -3px rgba(20, 184, 166, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 35px 2px rgba(20, 184, 166, 0.55);
-  }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2.5s infinite;
-}
-
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -158,7 +203,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #080C14;
+  background: #07090E;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -170,11 +215,15 @@
   background: #14b8a6;
 }
 
-/* Legal Notice Parchment Mode for Court Print */
+/* Print Styles */
 @media print {
   body {
     background: #ffffff !important;
     color: #000000 !important;
+  }
+
+  body::before {
+    display: none !important;
   }
 
   header, nav, button, .no-print {
