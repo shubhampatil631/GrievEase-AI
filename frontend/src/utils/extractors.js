@@ -71,11 +71,11 @@ function parseWordsToNumber(text = '') {
 /**
  * Dynamically extracts transaction details, amounts, dates, and entities from any bill or text.
  */
-export function extractFieldsFromGrievance(text = '', categoryHint = '') {
+export function extractFieldsFromGrievance(text = '', categoryHint = '', fallbackContext = '') {
   const rawText = text || '';
   // Normalize OCR artifacts like brackets, vertical pipes, and braces from table cells
   const cleanText = rawText.replace(/[\[\]\|\{\}]/g, ' ');
-  const detectedCategory = categoryHint || detectCategoryFromText(rawText);
+  const detectedCategory = categoryHint || detectCategoryFromText(rawText || fallbackContext);
 
   // -------------------------------------------------------------
   // 1. DYNAMIC AMOUNT EXTRACTION (Generic Pattern Matching)
@@ -122,6 +122,14 @@ export function extractFieldsFromGrievance(text = '', categoryHint = '') {
     }
   }
 
+  // Fallback to secondary text context if amount not found in primary OCR
+  if (!amount && fallbackContext) {
+    const fallbackCur = [...fallbackContext.matchAll(/(?:₹|Rs\.?|INR)\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{2})?)/gi)];
+    if (fallbackCur.length > 0) {
+      amount = `₹${fallbackCur[0][1]}`;
+    }
+  }
+
   if (!amount) {
     amount = '[DISPUTED AMOUNT NOT SPECIFIED IN BILL]';
   }
@@ -159,6 +167,14 @@ export function extractFieldsFromGrievance(text = '', categoryHint = '') {
           incidentDate = prefixDate[1].trim();
         }
       }
+    }
+  }
+
+  // Fallback to secondary context for date
+  if (!incidentDate && fallbackContext) {
+    const fallbackDate = fallbackContext.match(/(\d{1,2}(?:st|nd|rd|th)?[\s\-]+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s\-]+\d{4}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/i);
+    if (fallbackDate) {
+      incidentDate = fallbackDate[1];
     }
   }
 
@@ -212,6 +228,14 @@ export function extractFieldsFromGrievance(text = '', categoryHint = '') {
     referenceId = `Account #${accountNo}`;
   }
 
+  // Fallback to secondary context for reference ID
+  if (!referenceId && fallbackContext) {
+    const fbOrder = fallbackContext.match(/(?:Order|Docket|Ticket|Ref|Invoice|UTR)\s*#?[:\-]?\s*([A-Za-z0-9#\-_]{4,})/i);
+    if (fbOrder) {
+      referenceId = `Ref #${fbOrder[1]}`;
+    }
+  }
+
   if (!referenceId) {
     referenceId = '[DISPUTED REFERENCE / ORDER / DOCKET ID NOT PROVIDED]';
   }
@@ -239,6 +263,14 @@ export function extractFieldsFromGrievance(text = '', categoryHint = '') {
     const labelledEntityMatch = cleanText.match(/(?:Seller|Vendor|Merchant|Issued\s*By|Billed\s*By|Bank\s*Name|Company\s*Name)\s*[:\-]\s*([A-Za-z0-9\s&.\-']{3,40})/i);
     if (labelledEntityMatch) {
       merchant = toTitleCase(labelledEntityMatch[1].trim());
+    }
+  }
+
+  // Fallback to secondary context for merchant
+  if (!merchant && fallbackContext) {
+    const fbMerchantMatch = fallbackContext.match(/(?:seller|merchant|with|by|from)\s*['"]?([A-Za-z0-9\s&.\-']{3,30}?)(?:['"]|acknowledged|refuses|failed|\.|\,)/i);
+    if (fbMerchantMatch) {
+      merchant = toTitleCase(fbMerchantMatch[1].trim());
     }
   }
 
