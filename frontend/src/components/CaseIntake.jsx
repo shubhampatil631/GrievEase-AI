@@ -184,7 +184,21 @@ export default function CaseIntake({ onStartPipeline, onShowToast }) {
       // 5. If user complaint is unmodified or empty, auto-populate from real OCR facts
       const isUnmodified = !complaintText.trim() || DEMO_PRESETS.some(p => p.complaintText.trim() === complaintText.trim());
       if (isUnmodified && dynamicEntities.referenceId && dynamicEntities.referenceId !== '[DISPUTED REFERENCE / ORDER / DOCKET ID NOT PROVIDED]') {
-        setComplaintText(`Dispute regarding ${dynamicEntities.referenceId} dated ${dynamicEntities.incidentDate} issued by ${dynamicEntities.merchant} for the consideration amount of ${dynamicEntities.amount}. The service provider failed to address the grievance within statutory timelines despite multiple representations.`);
+        const dateDesc = dynamicEntities.billingCycle 
+          ? `for the billing cycle commencing ${dynamicEntities.incidentDate}`
+          : `dated ${dynamicEntities.incidentDate}`;
+        
+        let amountDesc = dynamicEntities.disputedAmount 
+          ? `concerning a disputed amount of ${dynamicEntities.disputedAmount}${dynamicEntities.totalAmountDue && dynamicEntities.totalAmountDue !== dynamicEntities.disputedAmount ? ` (Total Amount Due: ${dynamicEntities.totalAmountDue})` : ''}`
+          : `for the consideration amount of ${dynamicEntities.amount}`;
+
+        if (detectedCat === 'TELECOM') {
+          setComplaintText(`Dispute regarding ${dynamicEntities.referenceId} ${dateDesc}, issued by ${dynamicEntities.merchant}, ${amountDesc}. The appeal is submitted before the Appellate Authority on grounds that the service provider failed to address the grievance within statutory timelines mandated under TRAI regulations despite multiple representations.`);
+        } else if (detectedCat === 'BANKING') {
+          setComplaintText(`Dispute regarding ${dynamicEntities.referenceId} ${dateDesc}, involving ${dynamicEntities.merchant}, ${amountDesc}. The complaint is submitted following failure of the bank's internal dispute redressal mechanism to reverse the transaction within statutory timelines under RBI regulations.`);
+        } else {
+          setComplaintText(`Dispute regarding ${dynamicEntities.referenceId} ${dateDesc} issued by ${dynamicEntities.merchant} for the consideration amount of ${dynamicEntities.amount}. The opposite party failed to address the grievance within statutory timelines despite multiple representations.`);
+        }
       }
 
       setIsScanningOcr(false);

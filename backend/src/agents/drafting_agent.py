@@ -50,34 +50,34 @@ Respond with ONLY a valid JSON object matching this schema exactly, with no mark
 
 def extract_fallback_fields_from_text(text: str) -> dict:
     """Deterministic regex extraction to populate fallback fields without hallucinating."""
-    # Extract amount (e.g., ₹4,500, Rs. 4500, INR 4,500)
-    amt_match = re.search(r'(?:₹|Rs\.?|INR)\s*(\d+(?:,\d+)*(?:\.\d{2})?)', text, re.IGNORECASE)
-    amount = f"₹{amt_match.group(1)}" if amt_match else "[NOT PROVIDED]"
+    # Extract amount (e.g., ₹4,500, Rs. 4500, INR 4,500, 5000 inr, 5000/-)
+    amt_match = re.search(r'(?:₹|Rs\.?|INR)\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{2})?|\d+)|\b([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{2})?|\d+)\s*(?:₹|Rs\.?|INR|/-\b)', text, re.IGNORECASE)
+    if amt_match:
+        val = amt_match.group(1) or amt_match.group(2)
+        amount = f"₹{val}"
+    else:
+        amount = "[NOT PROVIDED]"
 
-    # Extract date patterns (e.g. 15 Aug 2026, 15/08/2026, 2026-08-15)
-    date_match = re.search(r'(\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{4}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}-\d{2}-\d{2})', text, re.IGNORECASE)
+    # Extract date patterns (e.g. 15 Aug 2026, 04-Aug-2026, 12-Jul-2026, 15/08/2026, 2026-08-15)
+    date_match = re.search(r'(\d{1,2}(?:st|nd|rd|th)?[\s\-]+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*[\s\-]+\d{4}|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}-\d{2}-\d{2})', text, re.IGNORECASE)
     date_str = date_match.group(1) if date_match else "[NOT PROVIDED]"
 
-    # Extract order / UTR / Docket / Invoice / A/c refs if present
-    order_match = re.search(r'(?:Order\s*#?|Ticket\s*#?|Docket\s*#?|UTR[-:\s]*|A/c\s*#?|Ref\s*#?|Invoice\s*#?)\s*([A-Za-z0-9\-_]+)', text, re.IGNORECASE)
+    # Extract order / UTR / Docket / Invoice / A/c / PNR / Policy / Consumer No refs if present
+    order_match = re.search(r'(?:Order\s*#?|Ticket\s*#?|Docket\s*#?|UTR[-:\s]*|A/c\s*#?|Ref\s*#?|Invoice\s*#?|PNR\s*#?|Policy\s*#?|Consumer\s*No\s*#?|Txn\s*(?:id|#)?)\s*[:\-]?\s*([A-Za-z0-9\-_]+)', text, re.IGNORECASE)
     order_num = order_match.group(0) if order_match else "[NOT PROVIDED]"
 
-    # Dynamic seller / entity recognition
+    # Dynamic seller / entity recognition across consumer sectors (100% dynamic, zero hardcoded brands)
     seller = "[OPPOSITE PARTY NAME NOT PROVIDED]"
-    if re.search(r'apex\s*retail', text, re.IGNORECASE):
-        seller = "Apex Retail India Pvt Ltd"
-    elif re.search(r'jio|reliance', text, re.IGNORECASE):
-        seller = "Reliance Jio Infocomm Ltd"
-    elif re.search(r'airtel', text, re.IGNORECASE):
-        seller = "Bharti Airtel Ltd"
-    elif re.search(r'hdfc', text, re.IGNORECASE):
-        seller = "HDFC Bank Ltd"
-    elif re.search(r'sbi|state\s*bank', text, re.IGNORECASE):
-        seller = "State Bank of India"
-    elif re.search(r'amazon', text, re.IGNORECASE):
-        seller = "Amazon Seller Services India Pvt Ltd"
-    elif re.search(r'flipkart', text, re.IGNORECASE):
-        seller = "Flipkart Internet Pvt Ltd"
+    
+    # Strategy A: Match registered corporate suffix in text lines
+    corp_match = re.search(r'\b([A-Z0-9\s&.\-']{3,50}(?:PVT\s*LTD|PRIVATE\s*LIMITED|LIMITED|LTD|BANK|COMMUNICATIONS|ENTERPRISES|TECHNOLOGIES|RETAIL|SERVICES|CORPORATION|AIRLINES|HOSPITAL|INSURANCE|DISCOM))\b', text, re.IGNORECASE)
+    if corp_match:
+        seller = re.sub(r'\s{2,}', ' ', corp_match.group(1).strip())
+    else:
+        # Strategy B: Match labelled Vendor / Merchant / Seller / Bank fields
+        label_match = re.search(r'(?:Seller|Vendor|Merchant|Issued\s*By|Billed\s*By|Bank\s*Name|Company\s*Name)\s*[:\-]\s*([A-Za-z0-9\s&.\-']{3,40})', text, re.IGNORECASE)
+        if label_match:
+            seller = label_match.group(1).strip()
 
     return {
         "orderNumber": order_num,
@@ -159,8 +159,14 @@ def invoke_bedrock_drafting(model_id: str, prompt: str, normalized_text: str = "
             
             statutory_act = (
                 "Reserve Bank - Integrated Ombudsman Scheme, 2021" if forum == "RBI_OMBUDSMAN"
-                else "TRAI Telecom Consumers Protection Regulations" if forum == "TRAI"
+                else "TRAI Telecom Consumers Complaint Redressal Regulations" if forum == "TRAI"
                 else "Consumer Protection Act, 2019"
+            )
+
+            recipient_title = (
+                f"The Principal Nodal Officer,\n{extracted['sellerName']}" if forum == "BANKING" or forum == "RBI_OMBUDSMAN"
+                else f"The Appellate Authority,\n{extracted['sellerName']}" if forum == "TRAI"
+                else f"{extracted['sellerName']}\n[Grievance Redressal Cell / Nodal Officer]"
             )
 
             return {
@@ -168,7 +174,7 @@ def invoke_bedrock_drafting(model_id: str, prompt: str, normalized_text: str = "
                     f"LEGAL GRIEVANCE & STATUTORY ESCALATION NOTICE\n"
                     f"Under the Provisions of {statutory_act}\n\n"
                     f"Date: {current_date}\n\n"
-                    f"To,\n[OPPOSITE PARTY / NODAL GRIEVANCE OFFICER]\n[REGISTERED OFFICE ADDRESS]\n\n"
+                    f"To,\n{recipient_title}\n[REGISTERED OFFICE ADDRESS]\n\n"
                     f"SUBJECT: FORMAL STATUTORY NOTICE DEMANDING IMMEDIATE REFUND AND RESOLUTION FOR DEFICIENCY OF SERVICE\n\n"
                     f"Sir/Madam,\n\n"
                     f"Under instructions from my client, I hereby issue this statutory notice setting forth the following material facts:\n\n"
