@@ -554,16 +554,16 @@ Contact: [YOUR PHONE / EMAIL]`;
 
       {/* Tab 3: Formal Letterhead Mode */}
       {activeTab === 'letterhead' && (
-        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-white/10 max-w-4xl mx-auto print-legal-notice shadow-2xl relative bg-white text-slate-900">
-          <div className="border-b-2 border-slate-900 pb-4 mb-6 text-center">
-            <h2 className="text-xl font-bold font-serif uppercase tracking-wider text-slate-950">
+        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-white/10 max-w-4xl mx-auto print-legal-notice shadow-2xl relative text-slate-100">
+          <div className="border-b border-white/15 pb-4 mb-6 text-center">
+            <h2 className="text-xl font-bold font-serif uppercase tracking-wider text-white">
               LEGAL NOTICE OF STATUTORY ESCALATION & DEMAND
             </h2>
-            <p className="text-xs font-serif text-slate-600 mt-1">
+            <p className="text-xs font-serif text-slate-300 mt-1">
               Issued under the Mandate of Indian Consumer & Regulatory Protection Framework
             </p>
           </div>
-          <div className="font-serif text-sm text-slate-900 whitespace-pre-wrap leading-relaxed">
+          <div className="font-serif text-sm text-slate-100 whitespace-pre-wrap leading-relaxed">
             {noticeText}
           </div>
         </div>
