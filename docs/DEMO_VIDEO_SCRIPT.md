@@ -44,9 +44,9 @@
 > - Ensure high-contrast dark theme and clean browser window (F11 or full screen).
 
 **🎙️ Voiceover:**
-> *"Every year in India, over 4.8 million consumer grievances remain unresolved. When e-commerce platforms refuse refunds, banks ignore unauthorized UPI debits, or ISPs suffer weeks of downtime, citizens face complex jurisdiction rules, missed limitation deadlines, and weak informal emails that corporate nodal desks simply ignore.*
+> *"Over 4.8 million consumer grievances in India go unresolved annually because citizens struggle with complex legal jurisdictions and weak informal emails.*
 >
-> *Meet **GrievEase AI** — an autonomous multi-agent grievance escalation engine built entirely on AWS Serverless and Amazon Bedrock that converts raw consumer complaints and bill images into legally enforceable statutory notices in under 45 seconds."*
+> *Meet **GrievEase AI** — an autonomous multi-agent engine on AWS that turns raw complaints and invoice photos into legally enforceable statutory notices in under 45 seconds."*
 
 ---
 
