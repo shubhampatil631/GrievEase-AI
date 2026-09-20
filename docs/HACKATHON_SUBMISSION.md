@@ -13,6 +13,7 @@
 | Component | Production Resource / Live Link | Verification Status |
 |---|---|---|
 | **Live Web App (Amplify CDN)** | [https://main.d1pngouj0au9lg.amplifyapp.com/](https://main.d1pngouj0au9lg.amplifyapp.com/) | `ACTIVE & GLOBALLY DISTRIBUTED` |
+| **AWS Builder Community Post** | [GrievEase AI Deep-Dive Article](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices) | `PUBLISHED` |
 | **HTTP API Gateway (v2)** | `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com` | `DEPLOYED & ROUTED` |
 | **API Health Endpoint** | `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com/health` | `HTTP 200 OK` |
 | **Step Functions Pipeline** | `arn:aws:states:us-east-1:717139594049:stateMachine:GrievEasePipeline-dev` | `ORCHESTRATED` |

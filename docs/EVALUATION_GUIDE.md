@@ -7,6 +7,7 @@
 
 ## 🎯 Quick Links for Judges
 - **Live Deployed Web Application**: [https://main.d1pngouj0au9lg.amplifyapp.com/](https://main.d1pngouj0au9lg.amplifyapp.com/)
+- **Official AWS Builder Community Post**: [GrievEase AI: Turning Consumer Complaints into Legally Structured Notices](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices)
 - **Live HTTP API Gateway (v2)**: `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com`
 - **Live API Health Check**: `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com/health` (Returns JSON `{"status": "ok", "service": "GrievEase AI HTTP API"}`)
 - **AWS Step Functions Pipeline**: `arn:aws:states:us-east-1:717139594049:stateMachine:GrievEasePipeline-dev`
