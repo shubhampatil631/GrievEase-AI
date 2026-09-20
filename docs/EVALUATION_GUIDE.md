@@ -8,8 +8,7 @@
 ## 🎯 Quick Links for Judges
 - **Live Deployed Web Application**: [https://main.d1pngouj0au9lg.amplifyapp.com/](https://main.d1pngouj0au9lg.amplifyapp.com/)
 - **Live Demo Video (YouTube)**: [https://youtu.be/1TKUqjcyNwA](https://youtu.be/1TKUqjcyNwA)
-- **Official AWS Builder Post #1**: [GrievEase AI: Turning Consumer Complaints into Legally Structured Notices](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices)
-- **Official AWS Builder Article #2**: [GrievEase AI: Building an Autonomous Multi-Agent Grievance Escalation Engine](https://builder.aws.com/content/3JRJlKS6yqiTcsjWDL2O9u7vdrP/grievease-ai-building-an-autonomous-multi-agent-grievance-escalation-engine-on-aws-serverless-and-bedrock)
+- **Official AWS Builder Community Post**: [GrievEase AI: Turning Consumer Complaints into Legally Structured Notices](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices)
 - **Live HTTP API Gateway (v2)**: `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com`
 - **Live API Health Check**: `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com/health` (Returns JSON `{"status": "ok", "service": "GrievEase AI HTTP API"}`)
 - **AWS Step Functions Pipeline**: `arn:aws:states:us-east-1:717139594049:stateMachine:GrievEasePipeline-dev`
