@@ -24,7 +24,6 @@
 | **Live Web App (Amplify)** | [https://main.d1pngouj0au9lg.amplifyapp.com/](https://main.d1pngouj0au9lg.amplifyapp.com/) | `ACTIVE (Global CDN)` |
 | **Demo Video Walkthrough** | [https://youtu.be/1TKUqjcyNwA](https://youtu.be/1TKUqjcyNwA) | `▶️ LIVE DEMO (YouTube)` |
 | **AWS Builder Community Post** | [GrievEase AI: Turning Consumer Complaints into Legally Structured Notices](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices) | `PUBLISHED` |
-| **AWS Builder Deep-Dive Article** | [GrievEase AI: Building an Autonomous Multi-Agent Grievance Engine](https://builder.aws.com/content/3JRJlKS6yqiTcsjWDL2O9u7vdrP/grievease-ai-building-an-autonomous-multi-agent-grievance-escalation-engine-on-aws-serverless-and-bedrock) | `PUBLISHED` |
 | **HTTP API Gateway** | `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com` | `DEPLOYED (HTTP API v2)` |
 | **Step Functions State Machine** | `arn:aws:states:us-east-1:717139594049:stateMachine:GrievEasePipeline-dev` | `PROVISIONED` |
 | **Amazon Bedrock Knowledge Base** | `I9ZVRIM4C2` (Vector Store: OpenSearch Serverless) | `SYNCED` |
@@ -34,14 +33,30 @@
 
 ### 📚 Evaluation & Submission Quick Links
 - 🎥 [**Watch 3-Minute Demo Video (YouTube)**](https://youtu.be/1TKUqjcyNwA) — Complete live walkthrough of UI, OCR, Bedrock RAG & Step Functions
-- 📝 [**Official AWS Builder Community Post #1**](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices) — Deep-dive architectural article on AWS Community
-- 📰 [**Official AWS Builder Deep-Dive Article #2**](https://builder.aws.com/content/3JRJlKS6yqiTcsjWDL2O9u7vdrP/grievease-ai-building-an-autonomous-multi-agent-grievance-escalation-engine-on-aws-serverless-and-bedrock) — Complete multi-agent pipeline & serverless architecture breakdown
+- 📝 [**Official AWS Builder Community Post**](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices) — Deep-dive architectural article on AWS Community
 - 📖 [**Judge's Evaluation Guide**](docs/EVALUATION_GUIDE.md) — 1-Click UI presets, cURL API test commands, rubric matrix
 - 🏆 [**Official Hackathon Submission**](docs/HACKATHON_SUBMISSION.md) — Problem narrative, target tracks & impact
 - 🏛 [**Cloud Architecture Deep-Dive**](docs/ARCHITECTURE.md) — Step Functions ASL, Bedrock RAG, DynamoDB schema & IAM
 - 📜 [**Architecture Decision Records (ADRs)**](DECISION_LOG.md) — Technical trade-offs & design decisions
 
 </div>
+
+---
+
+## 📑 Table of Contents
+1. [Executive Summary & Problem Statement](#-1-executive-summary--problem-statement)
+2. [Target Track Alignment & Rubric Scoring](#-2-target-track-alignment--rubric-scoring)
+3. [High-Level Multi-Agent Architecture](#-3-high-level-multi-agent-architecture)
+4. [Load-Bearing AWS Services Breakdown](#-4-load-bearing-aws-services-breakdown)
+5. [The 4 Evaluation Scenarios (1-Click Verification)](#-5-the-4-evaluation-scenarios-instant-1-click-verification)
+6. [Live API Gateway Quick Test (cURL)](#-6-live-api-gateway-quick-test-curl)
+7. [Elite UI/UX Design System](#-7-elite-uiux-design-system-rank-1-standard)
+8. [DynamoDB Single-Table Schema](#-8-dynamodb-single-table-schema)
+9. [Automated Terminal Test Suite (37/37 Tests)](#-9-automated-terminal-test-suite-3737-tests)
+10. [Local Setup & Reproduction Instructions](#-10-local-setup--reproduction-instructions)
+11. [Security & Least Privilege Posture](#-11-security--least-privilege-posture)
+12. [Project Directory Map](#-12-project-directory-map)
+13. [Hackathon Evaluation Checklist](#-13-hackathon-evaluation-checklist)
 
 ---
 
@@ -70,7 +85,17 @@ In India, over **4.8 million consumer grievances** remain unaddressed annually a
 
 ---
 
-## 🏛 2. High-Level Multi-Agent Architecture
+## 🎯 2. Target Track Alignment & Rubric Scoring
+
+| Hackathon Target Track | Evaluator Rubric Focus | How GrievEase AI Wins | Direct Evidence / Reference |
+|---|---|---|---|
+| 🏆 **Track 1: Ship It (1st Place)** | End-to-End Production Completeness & Real-World Utility | Full serverless pipeline executing dual-layer OCR, RAG retrieval over Indian Gazette Acts, forced-JSON drafting, and single-table DynamoDB audit state in <45s. | [Live Amplify App](https://main.d1pngouj0au9lg.amplifyapp.com/) • [Step Functions ARN](https://console.aws.amazon.com/states) |
+| 🎨 **Track 2: Best UI/UX Standard (1st Place)** | Aesthetics, Fluidity, Accessibility & Zero-Friction UX | Obsidian Bento design system, live OCR laser sweep visualizer, Web Speech Sine-wave audio canvas, 4-in-1 Notice Studio with Print/Letterhead layout, and `Cmd+K` Command Palette. | [Notice Studio in App](https://main.d1pngouj0au9lg.amplifyapp.com/) • [`frontend/src/`](frontend/src/) |
+| 🚀 **Amazon Fast-Track Interview** | Cloud Architecture Depth & AI Safety Invariants | Zero-LLM Deterministic Guard Lambda (zero `bedrock:*` IAM permissions) mathematically preventing hallucinations on limitation windows and extortion phrasing. | [`compliance_guard_agent.py`](backend/src/agents/compliance_guard_agent.py) • [`template.yaml`](backend/template.yaml) |
+
+---
+
+## 🏛 3. High-Level Multi-Agent Architecture
 
 GrievEase AI is built with an **event-driven, serverless, least-privilege architecture** orchestrated by **AWS Step Functions**.
 
@@ -123,7 +148,7 @@ flowchart TD
 
 ---
 
-## ⚡ 3. Load-Bearing AWS Services Breakdown
+## ⚡ 4. Load-Bearing AWS Services Breakdown
 
 | AWS Service | Architecture Function | Technical Justification |
 |---|---|---|
@@ -139,7 +164,7 @@ flowchart TD
 
 ---
 
-## 🎯 4. The 4 Evaluation Scenarios (Instant 1-Click Verification)
+## 🎯 5. The 4 Evaluation Scenarios (Instant 1-Click Verification)
 
 GrievEase AI comes pre-loaded with **4 real-world statutory dispute scenarios** representing the core branches of the multi-agent pipeline:
 
@@ -186,7 +211,26 @@ GrievEase AI comes pre-loaded with **4 real-world statutory dispute scenarios** 
 
 ---
 
-## 🖥 5. Elite UI/UX Design System (Rank #1 Standard)
+## 🌐 6. Live API Gateway Quick Test (cURL)
+
+Judges can instantly test the live AWS API Gateway endpoints from any terminal:
+
+```bash
+# 1. Live Health Probe
+curl -X GET https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com/health
+
+# 2. Query Real-Time DynamoDB Dashboard Analytics
+curl -X GET https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com/cases/stats
+
+# 3. Create Case Payload (Triggers Step Functions pipeline)
+curl -X POST https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com/cases \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Smart TV Refund Pending", "category": "ECOMMERCE", "complaintText": "Defective TV delivered on 01-Aug-2026. Return accepted but INR 28,499 refund pending 45 days. Order #AZ-884920.", "amount": 28499}'
+```
+
+---
+
+## 🖥 7. Elite UI/UX Design System (Rank #1 Standard)
 
 The frontend adopts a handcrafted design standard built with modern principles:
 
@@ -203,7 +247,7 @@ The frontend adopts a handcrafted design standard built with modern principles:
 
 ---
 
-## 🗄 6. DynamoDB Single-Table Schema
+## 🗄 8. DynamoDB Single-Table Schema
 
 All application entities and audit trails reside in a single table `GrievEaseTable-dev` using single-table design principles:
 
@@ -215,7 +259,7 @@ All application entities and audit trails reside in a single table `GrievEaseTab
 
 ---
 
-## 🧪 7. Automated Terminal Test Suite (37/37 Tests)
+## 🧪 9. Automated Terminal Test Suite (37/37 Tests)
 
 You can execute the entire test suite directly in your terminal with a single command:
 
@@ -300,7 +344,7 @@ py -3 run_all_terminal_tests.py
 
 ---
 
-## 🚀 8. Local Setup & Reproduction Instructions
+## 🚀 10. Local Setup & Reproduction Instructions
 
 ### Prerequisites
 - Node.js (v18+)
@@ -332,7 +376,7 @@ python backend/scripts/seed_compliance_rules.py ComplianceRulesTable-dev
 
 ---
 
-## 🔒 9. Security & Least Privilege Posture
+## 🔒 11. Security & Least Privilege Posture
 
 - **Zero Cross-Agent Privilege**: Each agent Lambda role has exact granular IAM policies (`bedrock:InvokeModel` only on Drafting Lambda; `dynamodb:PutItem` only on ComplianceGuard; `s3:GetObject` only on Intake).
 - **Zero Raw Secret Exposure**: All API keys and environment variables read directly from AWS SSM Parameter Store / Lambda environment variables.
@@ -340,7 +384,7 @@ python backend/scripts/seed_compliance_rules.py ComplianceRulesTable-dev
 
 ---
 
-## 📄 10. Project Directory Map
+## 📄 12. Project Directory Map
 
 ```text
 GrievEase-AI/
@@ -405,7 +449,7 @@ GrievEase-AI/
 
 ---
 
-## 🏆 11. Hackathon Evaluation Checklist
+## 🏆 13. Hackathon Evaluation Checklist
 
 - [x] **AWS Step Functions Orchestration**: State machine orchestrates 4 specialized Lambda agents with branching and retry logic.
 - [x] **Amazon Bedrock Knowledge Bases**: Vector search over 6 curated regulatory documents using OpenSearch Serverless.
