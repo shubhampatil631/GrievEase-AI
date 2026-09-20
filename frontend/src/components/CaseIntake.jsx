@@ -47,6 +47,8 @@ export default function CaseIntake({ onStartPipeline, onShowToast }) {
   const [isScanningOcr, setIsScanningOcr] = useState(false);
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrStatus, setOcrStatus] = useState('');
+  const [liveOcrText, setLiveOcrText] = useState(DEMO_PRESETS[0].extractedOcr || '');
+  const [liveOcrLines, setLiveOcrLines] = useState(() => DEMO_PRESETS[0].extractedOcr ? DEMO_PRESETS[0].extractedOcr.split('\n').filter(Boolean) : []);
   const [liveExtractedFields, setLiveExtractedFields] = useState(() => 
     extractFieldsFromGrievance(DEMO_PRESETS[0].extractedOcr, DEMO_PRESETS[0].category, DEMO_PRESETS[0].complaintText)
   );
@@ -156,6 +158,8 @@ export default function CaseIntake({ onStartPipeline, onShowToast }) {
       setFilePreview(null);
     }
 
+    const fname = (file.name || '').toLowerCase();
+
     // 2. Run Real Tesseract OCR on the uploaded image
     setIsScanningOcr(true);
     setOcrProgress(10);
@@ -172,7 +176,6 @@ export default function CaseIntake({ onStartPipeline, onShowToast }) {
 
       // Intelligent browser fallback if OCR output is empty (e.g. offline worker or network block)
       if (!rawOcrText.trim() || extractedLines.length === 0) {
-        const fname = (file.name || '').toLowerCase();
         if (fname.includes('apex') || complaintText.toLowerCase().includes('apex') || complaintText.toLowerCase().includes('samsung')) {
           rawOcrText = DEMO_PRESETS[0].extractedOcr;
         } else if (fname.includes('telecom') || fname.includes('broadband') || fname.includes('jio') || complaintText.toLowerCase().includes('fiber')) {
