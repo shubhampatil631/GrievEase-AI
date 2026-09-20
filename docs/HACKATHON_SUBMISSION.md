@@ -14,7 +14,8 @@
 |---|---|---|
 | **Live Web App (Amplify CDN)** | [https://main.d1pngouj0au9lg.amplifyapp.com/](https://main.d1pngouj0au9lg.amplifyapp.com/) | `ACTIVE & GLOBALLY DISTRIBUTED` |
 | **Demo Video Walkthrough** | [https://youtu.be/1TKUqjcyNwA](https://youtu.be/1TKUqjcyNwA) | `▶️ LIVE DEMO (YouTube)` |
-| **AWS Builder Community Post** | [GrievEase AI Deep-Dive Article](https://builder.aws.com/content/3JRJlKS6yqiTcsjWDL2O9u7vdrP/grievease-ai-building-an-autonomous-multi-agent-grievance-escalation-engine-on-aws-serverless-and-bedrock) | `PUBLISHED` |
+| **AWS Builder Community Post #1** | [GrievEase AI: Turning Consumer Complaints into Notices](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices) | `PUBLISHED` |
+| **AWS Builder Deep-Dive Article #2** | [GrievEase AI: Autonomous Multi-Agent Escalation Engine](https://builder.aws.com/content/3JRJlKS6yqiTcsjWDL2O9u7vdrP/grievease-ai-building-an-autonomous-multi-agent-grievance-escalation-engine-on-aws-serverless-and-bedrock) | `PUBLISHED` |
 | **HTTP API Gateway (v2)** | `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com` | `DEPLOYED & ROUTED` |
 | **API Health Endpoint** | `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com/health` | `HTTP 200 OK` |
 | **Step Functions Pipeline** | `arn:aws:states:us-east-1:717139594049:stateMachine:GrievEasePipeline-dev` | `ORCHESTRATED` |
