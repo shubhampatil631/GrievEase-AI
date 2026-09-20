@@ -136,7 +136,7 @@ This document is the single source of truth for all architectural decisions, des
      $env:AWS_DEFAULT_REGION = "us-east-1"
      ```
 3. **SAM Build & Packaging**:
-   * Configured runtime compatibility in [`backend/template.yaml`](file:///d:/agents/AWS/GrievEase%20AI/backend/template.yaml) and bundled agent source code with `backend/src/requirements.txt`.
+   * Configured runtime compatibility in [`backend/template.yaml`](file:///d:/agents/AWS/GrievEase%20AI/backend/template.yaml) and bundled agent source code with `backend/requirements.txt`.
    * Executed `sam build` to compile the CloudFormation deployment package in `.aws-sam/build/`.
 4. **CloudFormation Stack Provisioning (`sam deploy --guided`)**:
    * Executed guided deployment with stack name `grievease-ai-stack` in region `us-east-1`.
