@@ -47,4 +47,11 @@ Thumbs.db
 .idea/
 *.swp
 *.traineddata
+*.zip
+*.tar.gz
+*.rar
 
+# Test and coverage artifacts
+.coverage
+htmlcov/
+.pytest_cache/

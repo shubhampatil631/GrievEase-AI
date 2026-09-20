@@ -70,12 +70,12 @@ def extract_fallback_fields_from_text(text: str) -> dict:
     seller = "[OPPOSITE PARTY NAME NOT PROVIDED]"
     
     # Strategy A: Match registered corporate suffix in text lines
-    corp_match = re.search(r'\b([A-Z0-9\s&.\-']{3,50}(?:PVT\s*LTD|PRIVATE\s*LIMITED|LIMITED|LTD|BANK|COMMUNICATIONS|ENTERPRISES|TECHNOLOGIES|RETAIL|SERVICES|CORPORATION|AIRLINES|HOSPITAL|INSURANCE|DISCOM))\b', text, re.IGNORECASE)
+    corp_match = re.search(r"\b([A-Z0-9\s&.\-']{3,50}(?:PVT\s*LTD|PRIVATE\s*LIMITED|LIMITED|LTD|BANK|COMMUNICATIONS|ENTERPRISES|TECHNOLOGIES|RETAIL|SERVICES|CORPORATION|AIRLINES|HOSPITAL|INSURANCE|DISCOM))\b", text, re.IGNORECASE)
     if corp_match:
         seller = re.sub(r'\s{2,}', ' ', corp_match.group(1).strip())
     else:
         # Strategy B: Match labelled Vendor / Merchant / Seller / Bank fields
-        label_match = re.search(r'(?:Seller|Vendor|Merchant|Issued\s*By|Billed\s*By|Bank\s*Name|Company\s*Name)\s*[:\-]\s*([A-Za-z0-9\s&.\-']{3,40})', text, re.IGNORECASE)
+        label_match = re.search(r"(?:Seller|Vendor|Merchant|Issued\s*By|Billed\s*By|Bank\s*Name|Company\s*Name)\s*[:\-]\s*([A-Za-z0-9\s&.\-']{3,40})", text, re.IGNORECASE)
         if label_match:
             seller = label_match.group(1).strip()
 

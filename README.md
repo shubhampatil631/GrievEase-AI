@@ -27,6 +27,13 @@
 | **DynamoDB Single-Table** | `GrievEaseTable-dev` & `ComplianceRulesTable-dev` | `ENCRYPTED (KMS)` |
 | **S3 Evidence Storage** | `grievease-evidence-717139594049-dev` | `PRESIGNED S3` |
 
+### 📚 Evaluation & Submission Quick Links
+- 📖 [**Judge's Evaluation Guide**](file:///d:/agents/AWS/GrievEase%20AI/docs/EVALUATION_GUIDE.md) — 1-Click UI presets, cURL API test commands, rubric matrix
+- 🏆 [**Official Hackathon Submission**](file:///d:/agents/AWS/GrievEase%20AI/docs/HACKATHON_SUBMISSION.md) — Problem narrative, target tracks & impact
+- 🏛 [**Cloud Architecture Deep-Dive**](file:///d:/agents/AWS/GrievEase%20AI/docs/ARCHITECTURE.md) — Step Functions ASL, Bedrock RAG, DynamoDB schema & IAM
+- 🎬 [**3-Minute Demo Video Script**](file:///d:/agents/AWS/GrievEase%20AI/docs/DEMO_VIDEO_SCRIPT.md) — Timestamps, visual cues & spoken script
+- 📜 [**Architecture Decision Records (ADRs)**](file:///d:/agents/AWS/GrievEase%20AI/DECISION_LOG.md) — Technical trade-offs & design decisions
+
 </div>
 
 ---
@@ -333,9 +340,17 @@ GrievEase-AI/
 ├── README.md                          # Master Hackathon Documentation (You are here)
 ├── DECISION_LOG.md                    # Architecture Decision Records (ADRs)
 ├── run_all_terminal_tests.py          # Unified Master Test Runner (37 Tests)
+├── test_diverse_inputs_and_bills.py   # Multi-Condition Stress Test Harness (12+ Conditions)
+├── docs/                              # Dedicated Hackathon Submission & Judge Documentation
+│   ├── HACKATHON_SUBMISSION.md        # Official Submission Writeup & Track Overview
+│   ├── EVALUATION_GUIDE.md            # Step-by-Step Judge Walkthrough & cURL Tests
+│   ├── ARCHITECTURE.md                # Multi-Agent State Machine & AWS Cloud Architecture
+│   └── DEMO_VIDEO_SCRIPT.md           # 3-Minute Video Script & Spoken Cues
 ├── sample_bills/                      # Real evaluation bills for OCR scanning
 │   ├── sample_apex_invoice.jpg        # E-Commerce retail tax invoice
-│   └── sample_telecom_invoice.jpg     # Broadband fiber monthly tax invoice
+│   ├── sample_telecom_invoice.jpg     # Broadband fiber monthly tax invoice
+│   ├── sample_banking_statement.jpg   # Bank account statement & UTR record
+│   └── new_icici_bank_dispute_bill.jpg# Banking dispute debit memo
 ├── corpus/                            # 6 Curated Statutory Grounding Documents
 │   ├── consumer-forum/                # Consumer Protection Act 2019 provisions
 │   ├── rbi-ombudsman/                 # RBI Integrated Ombudsman Scheme 2021
