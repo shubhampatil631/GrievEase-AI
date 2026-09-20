@@ -196,9 +196,9 @@ export function extractFieldsFromGrievance(text = '', categoryHint = '', fallbac
   }
 
   // Generic UTR identifier (e.g. UTR-8820491823, UTR: 99382109)
-  const utrMatch = cleanText.match(/\bUTR[-:\s]*(?:Reference|Ref|Txn|ID)?[^0-9A-Za-z\n\r]*(?:UTR[-:\s]*)?([0-9]{5,}[0-9A-Za-z]*|[A-Za-z0-9]{8,})/i);
+  const utrMatch = cleanText.match(/\bUTR[-\s:]*(?:Reference|Ref|Txn|ID)?[^0-9A-Za-z\n\r]*(?:UTR[-\s:]*)?([0-9]{5,}[0-9A-Za-z]*|[A-Za-z0-9]{8,})/i);
   // Generic Specific Prefixes (TEL-..., INV-..., AZ-..., BNK-...)
-  const prefixMatch = cleanText.match(/\b(TEL[-:\s]*\d+|INV[-:\s]*\d{4}[-:\s]*\d+|AZ[-:\s]*\d+|BNK[-:\s]*\d+)\b/i);
+  const prefixMatch = cleanText.match(/\b(TEL[-\s:]*\d+|INV[-\s:]*\d{4}[-\s:]*\d+|AZ[-\s:]*\d+|BNK[-\s:]*\d+)\b/i);
   // Generic Ticket / Docket identifier
   const docketMatch = cleanText.match(/(?:Docket\s*(?:ID|No\.?|#)?|Grievance\s*Ticket|Complaint\s*No|Case\s*No)\s*[:\-#]?\s*([A-Za-z0-9#\-_]{4,})/i);
   // Generic Order / Invoice identifier
@@ -207,7 +207,7 @@ export function extractFieldsFromGrievance(text = '', categoryHint = '', fallbac
   const pnrPolicyMatch = cleanText.match(/(?:PNR|Policy\s*(?:No\.?|#)?|Booking\s*ID|Consumer\s*No)\s*[:\-#]?\s*([A-Za-z0-9#\-_]{4,})/i);
 
   if (utrMatch && !/^(?:ref|reference|ticket|number|none|null|erence)$/i.test(utrMatch[1])) {
-    const rawVal = utrMatch[1].replace(/^UTR[-:\s]*/i, '');
+    const rawVal = utrMatch[1].replace(/^UTR[-\s:]*/i, '');
     referenceId = `UTR-${rawVal}`;
   } else if (prefixMatch) {
     const rawVal = prefixMatch[1].replace(/[:\s]/g, '-').trim();

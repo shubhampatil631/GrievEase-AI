@@ -28,11 +28,11 @@
 | **S3 Evidence Storage** | `grievease-evidence-717139594049-dev` | `PRESIGNED S3` |
 
 ### 📚 Evaluation & Submission Quick Links
-- 📖 [**Judge's Evaluation Guide**](file:///d:/agents/AWS/GrievEase%20AI/docs/EVALUATION_GUIDE.md) — 1-Click UI presets, cURL API test commands, rubric matrix
-- 🏆 [**Official Hackathon Submission**](file:///d:/agents/AWS/GrievEase%20AI/docs/HACKATHON_SUBMISSION.md) — Problem narrative, target tracks & impact
-- 🏛 [**Cloud Architecture Deep-Dive**](file:///d:/agents/AWS/GrievEase%20AI/docs/ARCHITECTURE.md) — Step Functions ASL, Bedrock RAG, DynamoDB schema & IAM
-- 🎬 [**3-Minute Demo Video Script**](file:///d:/agents/AWS/GrievEase%20AI/docs/DEMO_VIDEO_SCRIPT.md) — Timestamps, visual cues & spoken script
-- 📜 [**Architecture Decision Records (ADRs)**](file:///d:/agents/AWS/GrievEase%20AI/DECISION_LOG.md) — Technical trade-offs & design decisions
+- 📖 [**Judge's Evaluation Guide**](docs/EVALUATION_GUIDE.md) — 1-Click UI presets, cURL API test commands, rubric matrix
+- 🏆 [**Official Hackathon Submission**](docs/HACKATHON_SUBMISSION.md) — Problem narrative, target tracks & impact
+- 🏛 [**Cloud Architecture Deep-Dive**](docs/ARCHITECTURE.md) — Step Functions ASL, Bedrock RAG, DynamoDB schema & IAM
+- 🎬 [**3-Minute Demo Video Script**](docs/DEMO_VIDEO_SCRIPT.md) — Timestamps, visual cues & spoken script
+- 📜 [**Architecture Decision Records (ADRs)**](DECISION_LOG.md) — Technical trade-offs & design decisions
 
 </div>
 

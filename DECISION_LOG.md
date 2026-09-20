@@ -111,13 +111,13 @@ This document is the single source of truth for all architectural decisions, des
 * **Helper Scripts:** Added rule seeder (`seed_compliance_rules.py`) and knowledge base upload helper (`setup_knowledge_base.py`).
 * **Frontend UI Build (Best UI Track):**
   * Built complete React SPA in `frontend/` (Vite, Tailwind, Lucide).
-  * Implemented [`CaseIntake.jsx`](file:///d:/agents/AWS/GrievEase%20AI/frontend/src/components/CaseIntake.jsx) with 1-click judge presets, drag-and-drop evidence upload, and Guard test toggle.
-  * Implemented [`PipelineStepper.jsx`](file:///d:/agents/AWS/GrievEase%20AI/frontend/src/components/PipelineStepper.jsx) with 4-agent visual state nodes and live CloudWatch telemetry streaming.
-  * Implemented [`CaseResultView.jsx`](file:///d:/agents/AWS/GrievEase%20AI/frontend/src/components/CaseResultView.jsx) with split-screen legal notice studio, limitation countdown clock, and compliance audit score.
-  * Implemented [`Dashboard.jsx`](file:///d:/agents/AWS/GrievEase%20AI/frontend/src/components/Dashboard.jsx) with KPI cards, category filters, and expandable DynamoDB audit records.
+  * Implemented [`CaseIntake.jsx`](frontend/src/components/CaseIntake.jsx) with 1-click judge presets, drag-and-drop evidence upload, and Guard test toggle.
+  * Implemented [`PipelineStepper.jsx`](frontend/src/components/PipelineStepper.jsx) with 4-agent visual state nodes and live CloudWatch telemetry streaming.
+  * Implemented [`CaseResultView.jsx`](frontend/src/components/CaseResultView.jsx) with split-screen legal notice studio, limitation countdown clock, and compliance audit score.
+  * Implemented [`Dashboard.jsx`](frontend/src/components/Dashboard.jsx) with KPI cards, category filters, and expandable DynamoDB audit records.
 * **Day 1 Foundations Audit & Verification:**
-  * Verified 100% of Day 1 items in [`documentaion/grievease-implementation-plan.md`](file:///d:/agents/AWS/GrievEase%20AI/documentaion/grievease-implementation-plan.md).
-  * Added root [`.gitignore`](file:///d:/agents/AWS/GrievEase%20AI/.gitignore) and authoritative [`README.md`](file:///d:/agents/AWS/GrievEase%20AI/README.md).
+  * Verified 100% of Day 1 items in [`docs/grievease-implementation-plan.md`](docs/grievease-implementation-plan.md).
+  * Added root [`.gitignore`](.gitignore) and authoritative [`README.md`](README.md).
   * Production bundle compiled with zero errors/warnings in 11.01s.
   * Ahead of schedule: Implemented full agent logic & prompt templates planned for Day 2 alongside Day 1 foundations.
 
@@ -136,7 +136,7 @@ This document is the single source of truth for all architectural decisions, des
      $env:AWS_DEFAULT_REGION = "us-east-1"
      ```
 3. **SAM Build & Packaging**:
-   * Configured runtime compatibility in [`backend/template.yaml`](file:///d:/agents/AWS/GrievEase%20AI/backend/template.yaml) and bundled agent source code with `backend/requirements.txt`.
+   * Configured runtime compatibility in [`backend/template.yaml`](backend/template.yaml) and bundled agent source code with `backend/requirements.txt`.
    * Executed `sam build` to compile the CloudFormation deployment package in `.aws-sam/build/`.
 4. **CloudFormation Stack Provisioning (`sam deploy --guided`)**:
    * Executed guided deployment with stack name `grievease-ai-stack` in region `us-east-1`.
@@ -155,7 +155,7 @@ This document is the single source of truth for all architectural decisions, des
   * *Resolution:* Executed `python -m pip install boto3` in Python 3.11 to support administrative helper tasks outside the Lambda runtime.
 * **Issue 4: Missing Explicit AWS Region in Boto3 Client Initialization**
   * *Symptom:* `botocore.exceptions.NoRegionError: You must specify a region.`
-  * *Resolution:* Updated [`backend/scripts/seed_compliance_rules.py`](file:///d:/agents/AWS/GrievEase%20AI/backend/scripts/seed_compliance_rules.py) and [`backend/scripts/setup_knowledge_base.py`](file:///d:/agents/AWS/GrievEase%20AI/backend/scripts/setup_knowledge_base.py) to explicitly fall back to `os.environ.get("AWS_REGION", "us-east-1")`.
+  * *Resolution:* Updated [`backend/scripts/seed_compliance_rules.py`](backend/scripts/seed_compliance_rules.py) and [`backend/scripts/setup_knowledge_base.py`](backend/scripts/setup_knowledge_base.py) to explicitly fall back to `os.environ.get("AWS_REGION", "us-east-1")`.
 
 #### C. Live Provisioned Stack Outputs
 * **API Gateway HTTP API:** `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com`
@@ -171,7 +171,7 @@ This document is the single source of truth for all architectural decisions, des
   ```json
   {"status": "healthy", "service": "GrievEase AI API", "version": "1.0.0", "timestamp": "2026-09-17"}
   ```
-* **Frontend Binding:** Automatically populated [`frontend/.env`](file:///d:/agents/AWS/GrievEase%20AI/frontend/.env) with live CloudFormation outputs for zero-friction judge testing.
+* **Frontend Binding:** Automatically populated `frontend/.env` with live CloudFormation outputs for zero-friction judge testing.
 * **Bedrock Knowledge Base Linked:** Created and synchronized Amazon Bedrock Knowledge Base (`I9ZVRIM4C2`) with OpenSearch Serverless vector store and bound to Classification Agent environment.
 * **End-to-End Test Case Executed:** Verified live dispute execution (`c_7bb19b36`) routing to RBI Integrated Ombudsman Scheme (98% confidence) with 100% Compliance Guard verification.
 * **Deep UI Overhaul for Best UI Track (3rd Place - ₹1,00,000):**
@@ -182,3 +182,18 @@ This document is the single source of truth for all architectural decisions, des
   * **Split-Screen Notice Studio & Court Letterhead:** Real-time formal notice studio with Print/PDF export, 1-click email modal (Amazon SES simulation), limitation progress countdown clock, and Bedrock RAG statutory citation cards.
   * **Interactive AWS Blueprint Inspector:** Clickable architecture topology modal with metrics, ARNs, and judge evaluation rubrics.
   * **Production Compilation:** Clean Vite production build in 9.60s with 0 warnings/errors.
+
+### [2026-09-20] — Day 3: Final Pre-Submission Verification & Repository Polish
+
+#### ADR-008: Comprehensive Multi-Modal Verification & Zero-Friction Judge Onboarding
+* **Date:** 2026-09-20
+* **Status:** Accepted
+* **Context:** Judges evaluating submissions have limited time (<3 minutes) and diverse evaluation workflows (terminal CLI testing, web browser UI clicking, and API cURL inspection).
+* **Decision:**
+  * Build a unified, 1-command test harness (`py -3 run_all_terminal_tests.py`) covering 37 unit, integration, and OCR tests across Python backend and Node frontend.
+  * Build a 12-scenario stress test monitor (`py -3 test_diverse_inputs_and_bills.py`) asserting resilient handling for Hinglish slang, missing dates/amounts, ancient limitation expiry, and extortion intercept.
+  * Deploy live web application on AWS Amplify CDN with instant 1-click scenario presets.
+  * Provide pre-configured sample bills in `sample_bills/` and live cURL commands in `docs/EVALUATION_GUIDE.md`.
+* **Rationale:**
+  * Maximizes score across all judging criteria: completeness, architectural depth, UI/UX polish, and rock-solid reliability under edge cases.
+  * Ensures 100% verifiable proof without requiring judges to configure AWS credentials locally.
