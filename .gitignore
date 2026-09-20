@@ -55,8 +55,3 @@ Thumbs.db
 .coverage
 htmlcov/
 .pytest_cache/
-
-# Local Submission Form Answers (Do Not Push)
-SUBMISSION_FORM_ANSWERS.md
-*submission_answers*
-

@@ -8,6 +8,7 @@
 ![Claude 3](https://img.shields.io/badge/LLM-Claude_3_Haiku-purple?logo=anthropic&style=for-the-badge)
 ![DynamoDB Single Table](https://img.shields.io/badge/Database-DynamoDB_Single_Table-4053D6?logo=amazondynamodb&style=for-the-badge)
 [![AWS Builder Community Post](https://img.shields.io/badge/AWS_Builder-Community_Post-FF9900?logo=amazonaws&style=for-the-badge)](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices)
+[![Demo Video](https://img.shields.io/badge/Demo_Video-YouTube-red?logo=youtube&style=for-the-badge)](https://youtu.be/1TKUqjcyNwA)
 ![Tests](https://img.shields.io/badge/Tests-37%2F37_Passed_(100%25)-brightgreen?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-teal?style=for-the-badge)
 
@@ -21,6 +22,7 @@
 | Resource | Live Endpoint / AWS Cloud Identifier | Status |
 |---|---|---|
 | **Live Web App (Amplify)** | [https://main.d1pngouj0au9lg.amplifyapp.com/](https://main.d1pngouj0au9lg.amplifyapp.com/) | `ACTIVE (Global CDN)` |
+| **Demo Video Walkthrough** | [https://youtu.be/1TKUqjcyNwA](https://youtu.be/1TKUqjcyNwA) | `▶️ LIVE DEMO (YouTube)` |
 | **AWS Builder Community Post** | [GrievEase AI: Turning Consumer Complaints into Legally Structured Notices](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices) | `PUBLISHED` |
 | **HTTP API Gateway** | `https://6b6npw3fcb.execute-api.us-east-1.amazonaws.com` | `DEPLOYED (HTTP API v2)` |
 | **Step Functions State Machine** | `arn:aws:states:us-east-1:717139594049:stateMachine:GrievEasePipeline-dev` | `PROVISIONED` |
@@ -30,11 +32,11 @@
 | **S3 Evidence Storage** | `grievease-evidence-717139594049-dev` | `PRESIGNED S3` |
 
 ### 📚 Evaluation & Submission Quick Links
+- 🎥 [**Watch 3-Minute Demo Video (YouTube)**](https://youtu.be/1TKUqjcyNwA) — Complete live walkthrough of UI, OCR, Bedrock RAG & Step Functions
 - 📝 [**Official AWS Builder Community Post**](https://builder.aws.com/post/3JVqFaFVraQ1iRiwLs1OXxFq0Qt_p/grievease-ai-turning-consumer-complaints-into-legally-structured-escalation-notices) — Deep-dive architectural article on AWS Community
 - 📖 [**Judge's Evaluation Guide**](docs/EVALUATION_GUIDE.md) — 1-Click UI presets, cURL API test commands, rubric matrix
 - 🏆 [**Official Hackathon Submission**](docs/HACKATHON_SUBMISSION.md) — Problem narrative, target tracks & impact
 - 🏛 [**Cloud Architecture Deep-Dive**](docs/ARCHITECTURE.md) — Step Functions ASL, Bedrock RAG, DynamoDB schema & IAM
-- 🎬 [**3-Minute Demo Video Script**](docs/DEMO_VIDEO_SCRIPT.md) — Timestamps, visual cues & spoken script
 - 📜 [**Architecture Decision Records (ADRs)**](DECISION_LOG.md) — Technical trade-offs & design decisions
 
 </div>
@@ -347,8 +349,7 @@ GrievEase-AI/
 ├── docs/                              # Dedicated Hackathon Submission & Judge Documentation
 │   ├── HACKATHON_SUBMISSION.md        # Official Submission Writeup & Track Overview
 │   ├── EVALUATION_GUIDE.md            # Step-by-Step Judge Walkthrough & cURL Tests
-│   ├── ARCHITECTURE.md                # Multi-Agent State Machine & AWS Cloud Architecture
-│   └── DEMO_VIDEO_SCRIPT.md           # 3-Minute Video Script & Spoken Cues
+│   └── ARCHITECTURE.md                # Multi-Agent State Machine & AWS Cloud Architecture
 ├── sample_bills/                      # Real evaluation bills for OCR scanning
 │   ├── sample_apex_invoice.jpg        # E-Commerce retail tax invoice
 │   ├── sample_telecom_invoice.jpg     # Broadband fiber monthly tax invoice
